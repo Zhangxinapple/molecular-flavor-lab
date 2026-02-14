@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分子风味配对实验室 | Molecular Flavor Lab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            padding: 3rem 0;
+        }
+        
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 1.2rem;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin: 3rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1.5rem 2rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #00d4ff;
+        }
+        
+        .stat-label {
+            color: #888;
+            margin-top: 0.5rem;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        
+        .feature-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: #00d4ff;
+            transform: translateY(-5px);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+        
+        .feature-desc {
+            color: #888;
+            line-height: 1.6;
+        }
+        
+        .cta-section {
+            text-align: center;
+            padding: 4rem 0;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            color: white;
+            padding: 1rem 3rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+        
+        .cta-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 30px rgba(0,212,255,0.4);
+        }
+        
+        .cta-button.secondary {
+            background: transparent;
+            border: 2px solid #00d4ff;
+        }
+        
+        .how-it-works {
+            margin: 4rem 0;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: #fff;
+        }
+        
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        
+        .step {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin: 0 auto 1rem;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+        
+        .step-desc {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 3rem 0;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 3rem;
+        }
+        
+        footer p {
+            color: #666;
+            margin: 0.5rem 0;
+        }
+        
+        .tag {
+            display: inline-block;
+            background: rgba(0,212,255,0.15);
+            color: #00d4ff;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin: 0.2rem;
+            border: 1px solid rgba(0,212,255,0.3);
+        }
+        
+        .pairing-types {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .pairing-type {
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .pairing-type.consonance {
+            background: rgba(0,212,255,0.1);
+            border: 1px solid #00d4ff;
+        }
+        
+        .pairing-type.contrast {
+            background: rgba(231,111,81,0.1);
+            border: 1px solid #e76f51;
+        }
+        
+        .pairing-type h3 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .pairing-type.consonance h3 {
+            color: #00d4ff;
+        }
+        
+        .pairing-type.contrast h3 {
+            color: #e76f51;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .stats {
+                gap: 1rem;
+            }
+            
+            .stat-item {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🧪</div>
+            <h1>分子风味配对实验室</h1>
+            <p class="subtitle">Molecular Flavor Lab | 基于分子指纹的食材配对灵感引擎</p>
+        </header>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number">501</div>
+                <div class="stat-label">食材总数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">590</div>
+                <div class="stat-label">风味标签</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">33</div>
+                <div class="stat-label">食材类别</div>
+            </div>
+        </div>
+        
+        <div class="pairing-types">
+            <div class="pairing-type consonance">
+                <h3>🔄 Consonance</h3>
+                <p>同味型叠加</p>
+                <p style="font-size: 0.85rem; color: #888; margin-top: 0.5rem;">寻找共享风味分子的和谐搭配</p>
+            </div>
+            <div class="pairing-type contrast">
+                <h3>⚡ Contrast</h3>
+                <p>对比味型</p>
+                <p style="font-size: 0.85rem; color: #888; margin-top: 0.5rem;">发现风味互补的创意组合</p>
+            </div>
+        </div>
+        
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <div class="feature-title">智能搜索</div>
+                <div class="feature-desc">支持模糊搜索，快速找到目标食材。输入部分名称即可获得建议。</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔄</div>
+                <div class="feature-title">同味型叠加</div>
+                <div class="feature-desc">基于共享风味分子的搭配原理，寻找和谐协调的经典组合。</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-title">对比味型</div>
+                <div class="feature-desc">发现跨类别、跨口感的创意搭配，创造丰富的味觉层次。</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔬</div>
+                <div class="feature-title">科学解释</div>
+                <div class="feature-desc">了解每种搭配背后的分子原理，从科学角度理解风味。</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🚫</div>
+                <div class="feature-title">黑名单过滤</div>
+                <div class="feature-desc">排除不想看到的食材，个性化您的配对体验。</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🍳</div>
+                <div class="feature-title">菜谱建议</div>
+                <div class="feature-desc">AI 生成的创意烹饪建议，激发您的厨房灵感。</div>
+            </div>
+        </div>
+        
+        <div class="how-it-works">
+            <h2 class="section-title">如何使用</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-title">搜索食材</div>
+                    <div class="step-desc">输入食材名称，支持模糊搜索</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-title">选择配对模式</div>
+                    <div class="step-desc">Consonance 或 Contrast</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-title">查看推荐</div>
+                    <div class="step-desc">获取科学配对的食材建议</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-title">探索原理</div>
+                    <div class="step-desc">了解搭配背后的科学</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cta-section">
+            <h2 style="margin-bottom: 1.5rem;">开始探索风味的科学</h2>
+            <p style="color: #888; margin-bottom: 2rem;">基于 FlavorDB 分子风味数据库，发现食材之间的隐藏联系</p>
+            <a href="https://github.com/yourusername/molecular-flavor-lab" class="cta-button secondary">📖 查看文档</a>
+            <a href="https://github.com/yourusername/molecular-flavor-lab" class="cta-button">🚀 开始使用</a>
+        </div>
+        
+        <footer>
+            <p>🧪 分子风味配对实验室 | Molecular Flavor Lab</p>
+            <p style="font-size: 0.85rem;">Powered by FlavorDB | Data-driven Ingredient Pairing</p>
+            <p style="font-size: 0.8rem; margin-top: 1rem;">
+                <span class="tag">Python</span>
+                <span class="tag">Streamlit</span>
+                <span class="tag">Pandas</span>
+                <span class="tag">Molecular Gastronomy</span>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
