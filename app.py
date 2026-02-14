@@ -1,12 +1,13 @@
 """
-分子风味配对实验室 (Molecular Flavor Lab)
+分子风味配对实验室 (Molecular Flavor Lab) - V2.0
 基于FlavorDB数据的食材配对灵感引擎
+新增功能：中英文双语系统 + 算法可视化评分
 """
 
 import streamlit as st
 import pandas as pd
 from collections import Counter
-import json
+import os
 
 # ============== 页面配置 ==============
 st.set_page_config(
@@ -16,7 +17,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ============== 自定义CSS ==============
+# ============== 自定义CSS（支持动态颜色进度条）=============
 st.markdown("""
 <style>
     /* 全局样式 */
@@ -115,11 +116,6 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(0,212,255,0.4);
     }
     
-    /* 侧边栏样式 */
-    .css-1d391kg {
-        background: rgba(0,0,0,0.2);
-    }
-    
     /* 信息框 */
     .info-box {
         background: rgba(0,212,255,0.1);
@@ -151,6 +147,15 @@ st.markdown("""
         border: 1px solid #e76f51;
     }
     
+    /* 评分卡片 */
+    .score-card {
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    
     /* 分隔线 */
     hr {
         border-color: rgba(255,255,255,0.1);
@@ -158,6 +163,190 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+# ============== 多语言文本配置 ==============
+I18N = {
+    'zh': {
+        'title': '🧪 分子风味配对实验室',
+        'subtitle': '基于分子指纹的食材配对灵感引擎 | Powered by FlavorDB',
+        'search_placeholder': '输入食材名称（如: 草莓、牛肉、咖啡...）',
+        'search_label': '🔍 搜索食材',
+        'category_filter': '📂 类别筛选',
+        'all_categories': '全部',
+        'search_results': '📋 搜索结果',
+        'select_ingredient': '选择食材:',
+        'flavor_tags': '风味标签数',
+        'unique_flavors': '唯一风味数',
+        'main_flavors': '主要风味特征:',
+        'pairing_mode': '🔍 配对模式',
+        'consonance_label': '同味型叠加 (Consonance)',
+        'contrast_label': '对比味型 (Contrast)',
+        'consonance_help': '寻找风味相似的食材',
+        'contrast_help': '寻找风味互补的食材',
+        'settings': '⚙️ 设置',
+        'result_count': '显示结果数量',
+        'blacklist': '🚫 黑名单',
+        'blacklist_placeholder': '例如:\n大蒜\n洋葱',
+        'blacklist_help': '这些食材将不会出现在配对结果中',
+        'about': '📖 关于',
+        'about_text': '基于 **FlavorDB** 分子风味数据库，使用集合运算计算食材间的风味重合度，为您提供科学的食材配对建议。',
+        'data_overview': '📊 数据概览',
+        'ingredient_count': '食材总数',
+        'flavor_count': '风味标签',
+        'category_count': '食材类别',
+        'popular_ingredients': '🔥 热门食材推荐',
+        'pairing_score': '配对得分',
+        'jaccard_score': 'Jaccard 相似度',
+        'common_flavors': '共有风味分子',
+        'contrast_features': '互补性特征',
+        'category_bonus': '跨类别加分',
+        'recommendations': '🎯 推荐搭配',
+        'view_principle': '🔬 查看配对原理',
+        'generate_recipe': '🍳 生成菜谱建议',
+        'no_results': '未找到合适的配对结果，请尝试其他食材或调整设置。',
+        'no_match': '未找到匹配的食材，请尝试其他关键词。',
+        'usage_guide': '📖 使用指南',
+        'science_principle': '🧪 科学原理',
+        'consonance_desc': '基于共享风味分子的搭配原理。当两种食材含有大量共同的风味化合物时，它们会产生和谐、协调的味觉体验。',
+        'contrast_desc': '基于风味互补的搭配原理。不同风味特征的食材通过对比和平衡，创造出更丰富、更有层次的味觉体验。',
+        'footer': '🧪 分子风味配对实验室 | Molecular Flavor Lab',
+        'footer_sub': 'Powered by FlavorDB | Data-driven Ingredient Pairing',
+        'score_excellent': '极佳',
+        'score_good': '优秀',
+        'score_average': '良好',
+        'score_poor': '一般',
+        'excellent_threshold': 150,
+        'good_threshold': 100,
+        'average_threshold': 60,
+    },
+    'en': {
+        'title': '🧪 Molecular Flavor Lab',
+        'subtitle': 'Ingredient Pairing Engine Powered by Molecular Fingerprints | FlavorDB',
+        'search_placeholder': 'Search ingredients (e.g., Strawberry, Beef, Coffee...)',
+        'search_label': '🔍 Search Ingredient',
+        'category_filter': '📂 Category Filter',
+        'all_categories': 'All',
+        'search_results': '📋 Search Results',
+        'select_ingredient': 'Select Ingredient:',
+        'flavor_tags': 'Flavor Tags',
+        'unique_flavors': 'Unique Flavors',
+        'main_flavors': 'Main Flavor Profile:',
+        'pairing_mode': '🔍 Pairing Mode',
+        'consonance_label': 'Consonance (Harmony)',
+        'contrast_label': 'Contrast (Complement)',
+        'consonance_help': 'Find ingredients with similar flavors',
+        'contrast_help': 'Find ingredients with complementary flavors',
+        'settings': '⚙️ Settings',
+        'result_count': 'Number of Results',
+        'blacklist': '🚫 Blacklist',
+        'blacklist_placeholder': 'e.g.:\nGarlic\nOnion',
+        'blacklist_help': 'These ingredients will be excluded from results',
+        'about': '📖 About',
+        'about_text': 'Powered by **FlavorDB**, using set operations to calculate flavor overlap between ingredients for scientifically-backed pairing suggestions.',
+        'data_overview': '📊 Data Overview',
+        'ingredient_count': 'Total Ingredients',
+        'flavor_count': 'Flavor Tags',
+        'category_count': 'Categories',
+        'popular_ingredients': '🔥 Popular Ingredients',
+        'pairing_score': 'Pairing Score',
+        'jaccard_score': 'Jaccard Similarity',
+        'common_flavors': 'Shared Flavor Molecules',
+        'contrast_features': 'Complementary Features',
+        'category_bonus': 'Cross-Category Bonus',
+        'recommendations': '🎯 Recommended Pairings',
+        'view_principle': '🔬 View Pairing Principle',
+        'generate_recipe': '🍳 Generate Recipe Idea',
+        'no_results': 'No suitable pairings found. Try a different ingredient or adjust settings.',
+        'no_match': 'No matching ingredients found. Try different keywords.',
+        'usage_guide': '📖 User Guide',
+        'science_principle': '🧪 Scientific Principle',
+        'consonance_desc': 'Based on shared flavor molecules. When two ingredients share many flavor compounds, they create harmonious, coordinated taste experiences.',
+        'contrast_desc': 'Based on flavor complementarity. Different flavor characteristics create richer, more layered taste experiences through contrast and balance.',
+        'footer': '🧪 Molecular Flavor Lab',
+        'footer_sub': 'Powered by FlavorDB | Data-driven Ingredient Pairing',
+        'score_excellent': 'Excellent',
+        'score_good': 'Good',
+        'score_average': 'Average',
+        'score_poor': 'Fair',
+        'excellent_threshold': 150,
+        'good_threshold': 100,
+        'average_threshold': 60,
+    }
+}
+
+# ============== 食材中英文映射表（常用食材）=============
+INGREDIENT_TRANSLATIONS = {
+    # 水果类
+    'tomato': '西红柿', 'strawberry': '草莓', 'apple': '苹果', 'banana': '香蕉',
+    'orange': '橙子', 'lemon': '柠檬', 'lime': '青柠', 'grape': '葡萄',
+    'peach': '桃子', 'pear': '梨', 'cherry': '樱桃', 'mango': '芒果',
+    'pineapple': '菠萝', 'watermelon': '西瓜', 'melon': '甜瓜', 'blueberry': '蓝莓',
+    'raspberry': '覆盆子', 'blackberry': '黑莓', 'apricot': '杏', 'plum': '李子',
+    'grapefruit': '葡萄柚', 'coconut': '椰子', 'kiwi': '猕猴桃', 'papaya': '木瓜',
+    'pomegranate': '石榴', 'fig': '无花果', 'date': '枣', 'olive': '橄榄',
+    'avocado': '牛油果', 'lychee': '荔枝', 'durian': '榴莲', 'mangosteen': '山竹',
+    
+    # 蔬菜类
+    'potato': '土豆', 'onion': '洋葱', 'garlic': '大蒜', 'carrot': '胡萝卜',
+    'cucumber': '黄瓜', 'lettuce': '生菜', 'cabbage': '卷心菜', 'broccoli': '西兰花',
+    'cauliflower': '花椰菜', 'spinach': '菠菜', 'celery': '芹菜', 'asparagus': '芦笋',
+    'eggplant': '茄子', 'pepper': '辣椒', 'chili': '辣椒', 'bell pepper': '甜椒',
+    'corn': '玉米', 'pea': '豌豆', 'bean': '豆类', 'mushroom': '蘑菇',
+    'ginger': '姜', 'radish': '萝卜', 'beetroot': '甜菜', 'pumpkin': '南瓜',
+    'squash': '南瓜', 'zucchini': '西葫芦', 'leek': '韭菜', 'shallot': '青葱',
+    
+    # 香草香料
+    'basil': '罗勒', 'mint': '薄荷', 'rosemary': '迷迭香', 'thyme': '百里香',
+    'oregano': '牛至', 'sage': '鼠尾草', 'cilantro': '香菜', 'parsley': '欧芹',
+    'dill': '莳萝', 'chives': '细香葱', 'tarragon': '龙蒿', 'bay leaf': '月桂叶',
+    'cinnamon': '肉桂', 'vanilla': '香草', 'clove': '丁香', 'nutmeg': '肉豆蔻',
+    'cardamom': '豆蔻', 'saffron': '藏红花', 'turmeric': '姜黄', 'cumin': '孜然',
+    'coriander': '香菜籽', 'fennel': '茴香', 'anise': '八角', 'star anise': '八角',
+    'pepper': '胡椒', 'black pepper': '黑胡椒', 'white pepper': '白胡椒',
+    'chili pepper': '辣椒', 'paprika': '红椒粉', 'cayenne': '卡宴辣椒',
+    
+    # 肉类
+    'beef': '牛肉', 'pork': '猪肉', 'chicken': '鸡肉', 'lamb': '羊肉',
+    'duck': '鸭肉', 'turkey': '火鸡肉', 'veal': '小牛肉', 'venison': '鹿肉',
+    'bacon': '培根', 'ham': '火腿', 'sausage': '香肠', 'salami': '萨拉米',
+    
+    # 海鲜
+    'salmon': '三文鱼', 'tuna': '金枪鱼', 'cod': '鳕鱼', 'shrimp': '虾',
+    'prawn': '大虾', 'crab': '蟹', 'lobster': '龙虾', 'oyster': '生蚝',
+    'scallop': '扇贝', 'mussel': '青口', 'clam': '蛤蜊', 'squid': '鱿鱼',
+    'octopus': '章鱼', 'anchovy': '凤尾鱼', 'sardine': '沙丁鱼', 'herring': '鲱鱼',
+    
+    # 乳制品
+    'milk': '牛奶', 'cheese': '奶酪', 'butter': '黄油', 'cream': '奶油',
+    'yogurt': '酸奶', 'cheddar': '切达奶酪', 'mozzarella': '马苏里拉奶酪',
+    'parmesan': '帕尔马干酪', 'brie': '布里奶酪', 'camembert': '卡门贝尔奶酪',
+    'feta': '菲达奶酪', 'goat cheese': '山羊奶酪', 'blue cheese': '蓝纹奶酪',
+    'ricotta': '里科塔奶酪', 'mascarpone': '马斯卡彭奶酪',
+    
+    # 谷物坚果
+    'rice': '大米', 'wheat': '小麦', 'bread': '面包', 'pasta': '意大利面',
+    'noodle': '面条', 'oat': '燕麦', 'barley': '大麦', 'quinoa': '藜麦',
+    'almond': '杏仁', 'walnut': '核桃', 'peanut': '花生', 'cashew': '腰果',
+    'pistachio': '开心果', 'hazelnut': '榛子', 'pecan': '山核桃', 'macadamia': '夏威夷果',
+    'sesame': '芝麻', 'sunflower seed': '葵花籽', 'pumpkin seed': '南瓜籽',
+    
+    # 饮品
+    'coffee': '咖啡', 'tea': '茶', 'green tea': '绿茶', 'black tea': '红茶',
+    'wine': '葡萄酒', 'red wine': '红酒', 'white wine': '白酒', 'beer': '啤酒',
+    'whiskey': '威士忌', 'vodka': '伏特加', 'rum': '朗姆酒', 'brandy': '白兰地',
+    'champagne': '香槟', 'cider': '苹果酒', 'sake': '清酒', 'juice': '果汁',
+    'honey': '蜂蜜', 'chocolate': '巧克力', 'cocoa': '可可',
+    
+    # 其他
+    'sugar': '糖', 'salt': '盐', 'vinegar': '醋', 'oil': '油',
+    'olive oil': '橄榄油', 'soy sauce': '酱油', 'fish sauce': '鱼露',
+    'oyster sauce': '蚝油', 'ketchup': '番茄酱', 'mustard': '芥末',
+    'mayonnaise': '蛋黄酱', 'truffle': '松露', 'caviar': '鱼子酱',
+    'egg': '鸡蛋', 'egg yolk': '蛋黄', 'egg white': '蛋白',
+}
+
+# 创建反向映射（中文 -> 英文）
+INGREDIENT_TRANSLATIONS_REVERSE = {v: k for k, v in INGREDIENT_TRANSLATIONS.items()}
 
 # ============== 风味标签翻译词典 ==============
 FLAVOR_TRANSLATIONS = {
@@ -201,61 +390,6 @@ FLAVOR_TRANSLATIONS = {
     'seaweed': '海藻', 'truffle': '松露', 'egg': '蛋', 'honey': '蜂蜜',
     'maple': '枫糖', 'sugar': '糖', 'jam': '果酱', 'candy': '糖果',
     'cotton candy': '棉花糖', 'tutti frutti': '什锦水果', 'sandalwood': '檀香',
-    'licorice': '甘草', 'sarsaparilla': '菝葜', 'fenugreek': '葫芦巴',
-    'coriander': '香菜', 'turmeric': '姜黄', 'ginger': '姜', 'wasabi': '芥末',
-    'horseradish': '辣根', 'mustard': '芥末', 'paprika': '红椒', 'nutmeg': '肉豆蔻',
-    'allspice': '多香果', 'cardamom': '豆蔻', 'saffron': '藏红花', 'tarragon': '龙蒿',
-    'sage': '鼠尾草', 'rosemary': '迷迭香', 'basil': '罗勒', 'oregano': '牛至',
-    'dill': '莳萝', 'fennel': '茴香', 'caraway': '葛缕子', 'cumin': '孜然',
-    'bay': '月桂', 'laurel': '月桂', 'tea': '茶', 'black tea': '红茶',
-    'green tea': '绿茶', 'jasmin': '茉莉', 'mimosa': '含羞草', 'neroli': '橙花',
-    'orange flower': '橙花', 'ylang': '依兰', 'cananga': '依兰', 'tuberose': '晚香玉',
-    'gardenia': '栀子花', 'magnolia': '木兰', 'hawthorn': '山楂', 'hawthorne': '山楂',
-    'linden': '菩提', 'acacia': '金合欢', 'locust': '洋槐', 'rose water': '玫瑰水',
-    'rose flower': '玫瑰花', 'rose dried': '干玫瑰', 'red rose': '红玫瑰',
-    'iris': '鸢尾', 'orris': '鸢尾', 'violet leaf': '紫罗兰叶', 'hyacinth': '风信子',
-    'narcissus': '水仙', 'lilac': '丁香花', 'lily of the valley': '铃兰',
-    'citrus peel': '柑橘皮', 'orange peel': '橙皮', 'lemon peel': '柠檬皮',
-    'lime peel': '青柠皮', 'grapefruit peel': '葡萄柚皮', 'mandarin': '橘子',
-    'tangerine': '橘子', 'clementine': '小柑橘', 'kumquat': '金桔', 'pomelo': '柚子',
-    'bergamot': '佛手柑', 'citron': '香橼', 'yuzu': '柚子', 'sudachi': '酢橘',
-    'calamansi': '金桔', 'finger lime': '指橙', 'blood orange': '血橙',
-    'cara cara': '卡拉卡拉橙', 'navel': '脐橙', 'valencia': '瓦伦西亚橙',
-    'seville': '塞维利亚橙', 'bergamot orange': '佛手柑橙', 'bitter orange': '苦橙',
-    'sweet orange': '甜橙', 'meyer lemon': '迈耶柠檬', 'persian lime': '波斯青柠',
-    'key lime': '墨西哥青柠', 'kaffir lime': '箭叶橙', 'combava': '箭叶橙',
-    'citronella': '香茅', 'lemongrass': '柠檬草', 'verbena': '马鞭草',
-    'lemon balm': '柠檬香蜂草', 'lemon verbena': '柠檬马鞭草', 'melissa': '香蜂草',
-    'citral': '柠檬醛', 'citronellal': '香茅醛', 'geraniol': '香叶醇',
-    'linalool': '芳樟醇', 'limonene': '柠檬烯', 'pinene': '蒎烯', 'myrcene': '月桂烯',
-    'caryophyllene': '石竹烯', 'humulene': '蛇麻烯', 'bisabolene': '红没药烯',
-    'farnesene': '法尼烯', 'nerolidol': '橙花叔醇', 'phytol': '植醇',
-    'menthone': '薄荷酮', 'menthol': '薄荷醇', 'carvone': '香芹酮',
-    'anethole': '茴香脑', 'estragole': '草蒿脑', 'eugenol': '丁香酚',
-    'chavicol': '胡椒酚', 'safrole': '黄樟素', 'myristicin': '肉豆蔻醚',
-    'apiol': '芹菜脑', 'elemicin': '榄香素', 'asarone': '细辛脑',
-    'cinnamaldehyde': '肉桂醛', 'cinnamic': '肉桂', 'cinnamyl': '肉桂基',
-    'benzaldehyde': '苯甲醛', 'benzyl': '苄基', 'phenyl': '苯基',
-    'anisaldehyde': '茴香醛', 'cuminaldehyde': '枯茗醛', 'vanillin': '香兰素',
-    'ethyl vanillin': '乙基香兰素', 'maltol': '麦芽酚', 'ethyl maltol': '乙基麦芽酚',
-    'furaneol': '呋喃酮', 'sotolone': '葫芦巴内酯', 'maple furanone': '枫糖内酯',
-    'cotton furanone': '棉糖内酯', 'strawberry furanone': '草莓呋喃酮',
-    'pineapple ketone': '菠萝酮', 'raspberry ketone': '覆盆子酮',
-    'ionone': '紫罗兰酮', 'damascone': '大马士酮', 'damascenone': '大马士烯酮',
-    'beta-ionone': 'β-紫罗兰酮', 'alpha-ionone': 'α-紫罗兰酮',
-    'beta-damascone': 'β-大马士酮', 'alpha-damascone': 'α-大马士酮',
-    'theaspirane': '茶螺烷', 'thearubigin': '茶红素', 'theaflavin': '茶黄素',
-    'catechin': '儿茶素', 'epicatechin': '表儿茶素', 'epigallocatechin': '表没食子儿茶素',
-    'egcg': '表没食子儿茶素没食子酸酯', 'theanine': '茶氨酸', 'caffeine': '咖啡因',
-    'theobromine': '可可碱', 'theophylline': '茶碱', 'trigonelline': '葫芦巴碱',
-    'chlorogenic acid': '绿原酸', 'quinic acid': '奎宁酸', 'citric acid': '柠檬酸',
-    'malic acid': '苹果酸', 'tartaric acid': '酒石酸', 'succinic acid': '琥珀酸',
-    'lactic acid': '乳酸', 'acetic acid': '乙酸', 'formic acid': '甲酸',
-    'butyric acid': '丁酸', 'caproic acid': '己酸', 'caprylic acid': '辛酸',
-    'capric acid': '癸酸', 'lauric acid': '月桂酸', 'myristic acid': '肉豆蔻酸',
-    'palmitic acid': '棕榈酸', 'stearic acid': '硬脂酸', 'oleic acid': '油酸',
-    'linoleic acid': '亚油酸', 'linolenic acid': '亚麻酸', 'arachidic acid': '花生酸',
-    'behenic acid': '山嵛酸', 'erucic acid': '芥酸', 'nervonic acid': '神经酸',
 }
 
 # ============== 核心配对类 ==============
@@ -264,8 +398,13 @@ class MolecularFlavorLab:
     
     def __init__(self, csv_path='flavordb_data.csv'):
         """初始化，加载数据"""
-        self.df = pd.read_csv(csv_path)
+        # 使用相对路径，确保云端部署兼容性
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        full_path = os.path.join(base_dir, csv_path)
+        
+        self.df = pd.read_csv(full_path)
         self.flavor_translations = FLAVOR_TRANSLATIONS
+        self.ingredient_translations = INGREDIENT_TRANSLATIONS
         
         # 解析flavors字段
         self.parsed_data = self._parse_flavors()
@@ -273,8 +412,8 @@ class MolecularFlavorLab:
         # 构建风味倒排索引
         self.flavor_index = self._build_flavor_index()
         
-        # 构建名称搜索索引
-        self.name_index = {item['name'].lower(): item for item in self.parsed_data}
+        # 构建名称搜索索引（支持中英文）
+        self.name_index = self._build_name_index()
         
     def _parse_flavors(self):
         """解析flavors字段"""
@@ -311,30 +450,102 @@ class MolecularFlavorLab:
                 index[flavor].append(item)
         return index
     
+    def _build_name_index(self):
+        """构建名称搜索索引（支持中英文）"""
+        index = {}
+        for item in self.parsed_data:
+            # 英文名索引
+            en_name = item['name'].lower()
+            index[en_name] = item
+            
+            # 中文名索引（如果有翻译）
+            cn_name = self.ingredient_translations.get(en_name, '')
+            if cn_name:
+                index[cn_name] = item
+        return index
+    
     def translate_flavor(self, flavor_en):
         """翻译风味标签为中文"""
         return self.flavor_translations.get(flavor_en, flavor_en)
     
+    def translate_ingredient_to_cn(self, name_en):
+        """将食材英文名翻译为中文"""
+        return self.ingredient_translations.get(name_en.lower(), name_en)
+    
+    def translate_ingredient_to_en(self, name_cn):
+        """将食材中文名翻译为英文"""
+        return INGREDIENT_TRANSLATIONS_REVERSE.get(name_cn, name_cn)
+    
+    def get_ingredient_display_name(self, item, lang='zh'):
+        """获取食材的显示名称（根据语言）"""
+        en_name = item['name']
+        cn_name = self.translate_ingredient_to_cn(en_name)
+        
+        if lang == 'zh':
+            return f"{cn_name}" if cn_name != en_name else en_name
+        else:
+            return en_name
+    
     def get_ingredient_by_name(self, name):
-        """根据名称查找食材"""
-        name_lower = name.lower()
+        """根据名称查找食材（支持中英文）"""
+        name_lower = name.lower().strip()
+        
+        # 先尝试直接查找
+        if name_lower in self.name_index:
+            return self.name_index[name_lower]
+        
+        # 尝试中文转英文后查找
+        en_name = self.translate_ingredient_to_en(name_lower)
+        if en_name.lower() in self.name_index:
+            return self.name_index[en_name.lower()]
+        
+        # 模糊匹配
         for item in self.parsed_data:
             if name_lower in item['name'].lower():
                 return item
+        
         return None
     
     def search_ingredients(self, query, limit=20):
-        """搜索食材"""
+        """搜索食材（支持中英文）"""
         if not query:
             return []
-        query_lower = query.lower()
+        
+        query_lower = query.lower().strip()
         results = []
+        matched_ids = set()
+        
+        # 1. 精确匹配中文名
+        if query_lower in INGREDIENT_TRANSLATIONS_REVERSE:
+            en_name = INGREDIENT_TRANSLATIONS_REVERSE[query_lower]
+            for item in self.parsed_data:
+                if item['name'].lower() == en_name.lower() and item['id'] not in matched_ids:
+                    results.append(item)
+                    matched_ids.add(item['id'])
+        
+        # 2. 精确匹配英文名
         for item in self.parsed_data:
-            if query_lower in item['name'].lower():
+            if item['name'].lower() == query_lower and item['id'] not in matched_ids:
                 results.append(item)
+                matched_ids.add(item['id'])
+        
+        # 3. 模糊匹配英文名
+        for item in self.parsed_data:
+            if query_lower in item['name'].lower() and item['id'] not in matched_ids:
+                results.append(item)
+                matched_ids.add(item['id'])
             if len(results) >= limit:
                 break
-        return results
+        
+        # 4. 模糊匹配中文翻译
+        for cn_name, en_name in INGREDIENT_TRANSLATIONS_REVERSE.items():
+            if query_lower in cn_name and len(results) < limit:
+                for item in self.parsed_data:
+                    if item['name'].lower() == en_name.lower() and item['id'] not in matched_ids:
+                        results.append(item)
+                        matched_ids.add(item['id'])
+        
+        return results[:limit]
     
     def get_categories(self):
         """获取所有类别"""
@@ -344,53 +555,74 @@ class MolecularFlavorLab:
         """根据类别获取食材"""
         return [item for item in self.parsed_data if item['category'] == category]
     
+    # ==================== Consonance 评分算法 ====================
     def consonance_pairing(self, ingredient_name, top_n=10, exclude_categories=None, blacklist=None):
-        """同味型叠加配对（Consonance）"""
+        """
+        同味型叠加配对（Consonance）
+        评分公式: score = jaccard * 100 + common_count * 0.5
+        """
         target = self.get_ingredient_by_name(ingredient_name)
         if not target:
             return []
         
         exclude_categories = exclude_categories or []
-        blacklist = blacklist or []
+        blacklist = [b.lower() for b in (blacklist or [])]
         target_flavors = target['flavor_set']
         
         results = []
         for item in self.parsed_data:
+            # 排除自己
             if item['id'] == target['id']:
                 continue
+            # 排除指定类别
             if item['category'] in exclude_categories:
                 continue
-            if item['name'] in blacklist:
+            # 排除黑名单
+            if item['name'].lower() in blacklist:
                 continue
             
+            # 计算交集和并集
             common_flavors = target_flavors & item['flavor_set']
             if len(common_flavors) > 0:
                 union_flavors = target_flavors | item['flavor_set']
                 jaccard = len(common_flavors) / len(union_flavors)
+                
+                # Consonance 评分公式
                 score = jaccard * 100 + len(common_flavors) * 0.5
+                
+                # 归一化到 0-100 范围用于进度条显示
+                score_normalized = min(score / 2, 100)
                 
                 results.append({
                     'ingredient': item,
                     'common_flavors': common_flavors,
                     'common_count': len(common_flavors),
                     'jaccard': jaccard,
-                    'score': score
+                    'score': score,
+                    'score_normalized': score_normalized,
+                    'pairing_type': 'consonance'
                 })
         
+        # 按分数降序排序
         results.sort(key=lambda x: x['score'], reverse=True)
         return results[:top_n]
     
+    # ==================== Contrast 评分算法 ====================
     def contrast_pairing(self, ingredient_name, top_n=10, prefer_categories=None, blacklist=None):
-        """对比味型配对（Contrast）"""
+        """
+        对比味型配对（Contrast）
+        评分公式: score = contrast_score + category_bonus + intersection_bonus
+        """
         target = self.get_ingredient_by_name(ingredient_name)
         if not target:
             return []
         
         prefer_categories = prefer_categories or []
-        blacklist = blacklist or []
+        blacklist = [b.lower() for b in (blacklist or [])]
         target_flavors = target['flavor_set']
         target_category = target['category']
         
+        # 对比风味映射表
         contrast_mapping = {
             'sweet': ['sour', 'bitter', 'salty', 'acidic'],
             'sour': ['sweet', 'fatty', 'umami', 'creamy'],
@@ -405,86 +637,89 @@ class MolecularFlavorLab:
         
         results = []
         for item in self.parsed_data:
+            # 排除自己
             if item['id'] == target['id']:
                 continue
-            if item['name'] in blacklist:
+            # 排除黑名单
+            if item['name'].lower() in blacklist:
                 continue
             
             item_flavors = item['flavor_set']
             
+            # 计算对比分数
             contrast_score = 0
+            matched_contrast_pairs = []
             for target_flavor in target_flavors:
                 if target_flavor in contrast_mapping:
                     for contrast_flavor in contrast_mapping[target_flavor]:
                         if contrast_flavor in item_flavors:
                             contrast_score += 2
+                            matched_contrast_pairs.append(
+                                (target_flavor, contrast_flavor)
+                            )
             
+            # 类别加分
             category_bonus = 0
             if item['category'] != target_category:
-                category_bonus = 10
+                category_bonus = 10  # 跨类别加分
             if item['category'] in prefer_categories:
-                category_bonus += 15
+                category_bonus += 15  # 优先类别额外加分
             
+            # 交集加分（适度交集表示有一定联系但不过度相似）
             common = target_flavors & item_flavors
             intersection_bonus = 0
             if 3 <= len(common) <= 15:
                 intersection_bonus = 8
             
+            # Contrast 总分
             total_score = contrast_score + category_bonus + intersection_bonus
             
             if total_score > 0:
+                # 归一化到 0-100 范围
+                score_normalized = min(total_score * 2, 100)
+                
                 results.append({
                     'ingredient': item,
                     'contrast_score': contrast_score,
                     'category_bonus': category_bonus,
+                    'intersection_bonus': intersection_bonus,
                     'common_flavors': common,
                     'common_count': len(common),
-                    'score': total_score
+                    'matched_pairs': matched_contrast_pairs,
+                    'score': total_score,
+                    'score_normalized': score_normalized,
+                    'pairing_type': 'contrast'
                 })
         
+        # 按分数降序排序
         results.sort(key=lambda x: x['score'], reverse=True)
         return results[:top_n]
     
-    def explain_pairing(self, target_name, partner_name, pairing_type):
-        """解释配对原理"""
-        target = self.get_ingredient_by_name(target_name)
-        partner = self.get_ingredient_by_name(partner_name)
-        
-        if not target or not partner:
-            return "无法找到食材信息"
-        
-        common = target['flavor_set'] & partner['flavor_set']
-        target_unique = target['flavor_set'] - partner['flavor_set']
-        partner_unique = partner['flavor_set'] - target['flavor_set']
-        
+    def get_score_level(self, score, pairing_type='consonance'):
+        """根据分数返回等级和颜色"""
         if pairing_type == 'consonance':
-            explanation = f"""
-            **同味型叠加原理（Consonance）**
-            
-            {target['name']} 与 {partner['name']} 共享 **{len(common)}** 个风味分子标签：
-            {', '.join([self.translate_flavor(f) for f in list(common)[:8]])}
-            
-            这种搭配基于**风味共鸣**原理——当两种食材拥有大量共同的风味化合物时，
-            它们能够产生和谐、协调的味觉体验。这是经典搭配的科学基础。
-            """
-        else:
-            explanation = f"""
-            **对比味型原理（Contrast）**
-            
-            {target['name']} 与 {partner['name']} 形成**互补搭配**：
-            
-            - {target['name']} 的独特风味：{', '.join([self.translate_flavor(f) for f in list(target_unique)[:5]])}
-            - {partner['name']} 的独特风味：{', '.join([self.translate_flavor(f) for f in list(partner_unique)[:5]])}
-            
-            这种搭配基于**风味互补**原理——不同风味特征的食材通过对比和平衡，
-            创造出更丰富、更有层次的味觉体验。
-            """
-        
-        return explanation
+            if score >= 150:
+                return 'excellent', '#00c853'  # 绿色
+            elif score >= 100:
+                return 'good', '#64dd17'  # 浅绿
+            elif score >= 60:
+                return 'average', '#ffd600'  # 黄色
+            else:
+                return 'poor', '#ff9100'  # 橙色
+        else:  # contrast
+            if score >= 40:
+                return 'excellent', '#00c853'
+            elif score >= 30:
+                return 'good', '#64dd17'
+            elif score >= 20:
+                return 'average', '#ffd600'
+            else:
+                return 'poor', '#ff9100'
 
-# ============== 初始化 ==============
+# ============== 初始化（使用缓存）=============
 @st.cache_resource
 def get_lab():
+    """缓存数据加载，提高性能"""
     return MolecularFlavorLab('flavordb_data.csv')
 
 try:
@@ -494,51 +729,59 @@ except Exception as e:
     st.error(f"数据加载失败: {e}")
     data_loaded = False
 
-# ============== 侧边栏 ==============
+# ============== 侧边栏配置 ==============
 with st.sidebar:
-    st.markdown("## 🧪 分子风味配对实验室")
+    # 语言切换
+    st.markdown("## 🌐 Language / 语言")
+    lang = st.selectbox(
+        "Select Language / 选择语言",
+        options=['zh', 'en'],
+        format_func=lambda x: '中文' if x == 'zh' else 'English',
+        index=0
+    )
+    
+    # 获取当前语言的文本
+    t = I18N[lang]
+    
+    st.markdown(f"## {t['title']}")
     st.markdown("---")
     
     if data_loaded:
-        st.markdown(f"**📊 数据概览**")
-        st.markdown(f"- 食材总数: `{len(lab.parsed_data)}`")
-        st.markdown(f"- 风味标签: `{len(lab.flavor_index)}`")
-        st.markdown(f"- 食材类别: `{len(lab.get_categories())}`")
+        st.markdown(f"**{t['data_overview']}**")
+        st.markdown(f"- {t['ingredient_count']}: `{len(lab.parsed_data)}`")
+        st.markdown(f"- {t['flavor_count']}: `{len(lab.flavor_index)}`")
+        st.markdown(f"- {t['category_count']}: `{len(lab.get_categories())}`")
     
     st.markdown("---")
-    st.markdown("### 🔍 配对模式")
+    st.markdown(f"### {t['pairing_mode']}")
     
     pairing_mode = st.radio(
-        "选择配对类型:",
-        ["同味型叠加 (Consonance)", "对比味型 (Contrast)"],
-        help="Consonance: 寻找风味相似的食材 | Contrast: 寻找风味互补的食材"
+        t['pairing_mode'],
+        [t['consonance_label'], t['contrast_label']],
+        help=f"{t['consonance_help']} | {t['contrast_help']}"
     )
     
     st.markdown("---")
-    st.markdown("### ⚙️ 设置")
+    st.markdown(f"### {t['settings']}")
     
-    top_n = st.slider("显示结果数量", 5, 20, 10)
+    top_n = st.slider(t['result_count'], 5, 20, 10)
     
     # 黑名单功能
-    st.markdown("### 🚫 黑名单")
+    st.markdown(f"### {t['blacklist']}")
     blacklist_input = st.text_area(
-        "排除的食材（每行一个）:",
-        placeholder="例如:\nGarlic\nOnion",
-        help="这些食材将不会出现在配对结果中"
+        t['blacklist'],
+        placeholder=t['blacklist_placeholder'],
+        help=t['blacklist_help']
     )
     blacklist = [name.strip() for name in blacklist_input.split('\n') if name.strip()]
     
     st.markdown("---")
-    st.markdown("### 📖 关于")
-    st.markdown("""
-    基于 **FlavorDB** 分子风味数据库，
-    使用集合运算计算食材间的风味重合度，
-    为您提供科学的食材配对建议。
-    """)
+    st.markdown(f"### {t['about']}")
+    st.markdown(t['about_text'])
 
 # ============== 主页面 ==============
-st.markdown('<h1 class="main-title">🧪 分子风味配对实验室</h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle">基于分子指纹的食材配对灵感引擎 | Powered by FlavorDB</p>', unsafe_allow_html=True)
+st.markdown(f'<h1 class="main-title">{t["title"]}</h1>', unsafe_allow_html=True)
+st.markdown(f'<p class="subtitle">{t["subtitle"]}</p>', unsafe_allow_html=True)
 
 if not data_loaded:
     st.stop()
@@ -548,37 +791,50 @@ col1, col2 = st.columns([3, 1])
 
 with col1:
     search_query = st.text_input(
-        "🔍 搜索食材",
-        placeholder="输入食材名称（如: Strawberry, Beef, Coffee...）",
-        help="支持模糊搜索，输入部分名称即可"
+        t['search_label'],
+        placeholder=t['search_placeholder'],
+        help=t['search_placeholder']
     )
 
 with col2:
     category_filter = st.selectbox(
-        "📂 类别筛选",
-        ["全部"] + lab.get_categories()
+        t['category_filter'],
+        [t['all_categories']] + lab.get_categories()
     )
 
-# 搜索建议
+# 搜索建议与结果显示
 if search_query:
     search_results = lab.search_ingredients(search_query, limit=10)
     
-    if category_filter != "全部":
+    if category_filter != t['all_categories']:
         search_results = [r for r in search_results if r['category'] == category_filter]
     
     if search_results:
-        st.markdown("### 📋 搜索结果")
+        st.markdown(f"### {t['search_results']}")
         
-        # 使用radio选择食材
-        ingredient_names = [f"{r['name']} ({r['category']})" for r in search_results]
-        selected = st.radio(
-            "选择食材:",
-            ingredient_names,
+        # 构建显示选项（中英文）
+        ingredient_options = []
+        for item in search_results:
+            display_name = lab.get_ingredient_display_name(item, lang)
+            en_name = item['name']
+            cn_name = lab.translate_ingredient_to_cn(en_name)
+            
+            if lang == 'zh' and cn_name != en_name:
+                option_label = f"{display_name} ({en_name}) - {item['category']}"
+            else:
+                option_label = f"{display_name} - {item['category']}"
+            
+            ingredient_options.append((option_label, item['name']))
+        
+        selected_label = st.radio(
+            t['select_ingredient'],
+            [opt[0] for opt in ingredient_options],
             horizontal=True,
             label_visibility="collapsed"
         )
         
-        selected_name = selected.split(' (')[0]
+        # 获取选中的英文名
+        selected_name = dict(ingredient_options)[selected_label]
         selected_ingredient = lab.get_ingredient_by_name(selected_name)
         
         if selected_ingredient:
@@ -587,14 +843,16 @@ if search_query:
             # 显示选中食材信息
             col_info1, col_info2 = st.columns([2, 3])
             
+            display_name = lab.get_ingredient_display_name(selected_ingredient, lang)
+            
             with col_info1:
                 st.markdown(f"""
                 <div class="ingredient-card">
-                    <h3>🍃 {selected_ingredient['name']}</h3>
+                    <h3>🍃 {display_name}</h3>
                     <span class="category-tag">{selected_ingredient['category']}</span>
                     <p style="margin-top: 1rem;">
-                        <strong>风味标签数:</strong> {len(selected_ingredient['flavors'])}<br>
-                        <strong>唯一风味数:</strong> {len(selected_ingredient['flavor_set'])}
+                        <strong>{t['flavor_tags']}:</strong> {len(selected_ingredient['flavors'])}<br>
+                        <strong>{t['unique_flavors']}:</strong> {len(selected_ingredient['flavor_set'])}
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
@@ -604,7 +862,7 @@ if search_query:
                 flavor_counts = Counter(selected_ingredient['flavors'])
                 top_flavors = flavor_counts.most_common(15)
                 
-                st.markdown("**主要风味特征:**")
+                st.markdown(f"**{t['main_flavors']}**")
                 flavor_html = ""
                 for flavor, count in top_flavors:
                     flavor_cn = lab.translate_flavor(flavor)
@@ -614,7 +872,7 @@ if search_query:
             st.markdown("---")
             
             # 执行配对
-            is_consonance = "Consonance" in pairing_mode
+            is_consonance = "Consonance" in pairing_mode or "同味型" in pairing_mode
             
             if is_consonance:
                 results = lab.consonance_pairing(
@@ -622,11 +880,10 @@ if search_query:
                     top_n=top_n,
                     blacklist=blacklist
                 )
-                st.markdown('<span class="pairing-type pairing-consonance">🔄 同味型叠加 Consonance</span>', unsafe_allow_html=True)
-                st.markdown("""
+                st.markdown(f'<span class="pairing-type pairing-consonance">🔄 {t["consonance_label"]}</span>', unsafe_allow_html=True)
+                st.markdown(f"""
                 <div class="info-box">
-                    寻找与目标食材<strong>共享最多风味分子</strong>的搭配方案。
-                    这种搭配会产生和谐、协调的味觉体验。
+                    {t['consonance_desc']}
                 </div>
                 """, unsafe_allow_html=True)
             else:
@@ -635,15 +892,14 @@ if search_query:
                     top_n=top_n,
                     blacklist=blacklist
                 )
-                st.markdown('<span class="pairing-type pairing-contrast">⚡ 对比味型 Contrast</span>', unsafe_allow_html=True)
-                st.markdown("""
+                st.markdown(f'<span class="pairing-type pairing-contrast">⚡ {t["contrast_label"]}</span>', unsafe_allow_html=True)
+                st.markdown(f"""
                 <div class="info-box" style="border-color: #e76f51; background: rgba(231,111,81,0.1);">
-                    寻找与目标食材<strong>风味互补</strong>的创意搭配。
-                    这种搭配通过对比和平衡创造丰富的味觉层次。
+                    {t['contrast_desc']}
                 </div>
                 """, unsafe_allow_html=True)
             
-            st.markdown("### 🎯 推荐搭配")
+            st.markdown(f"### {t['recommendations']}")
             
             if results:
                 for i, result in enumerate(results, 1):
@@ -651,46 +907,99 @@ if search_query:
                     common_list = list(result['common_flavors'])
                     common_cn = [lab.translate_flavor(f) for f in common_list[:8]]
                     
+                    # 获取分数等级和颜色
+                    level, color = lab.get_score_level(result['score'], result['pairing_type'])
+                    
+                    # 显示名称
+                    partner_display_name = lab.get_ingredient_display_name(ing, lang)
+                    
                     with st.container():
-                        col_r1, col_r2 = st.columns([1, 4])
+                        # 分数显示区域
+                        score_col, info_col = st.columns([1, 3])
                         
-                        with col_r1:
-                            st.markdown(f'<span class="score-badge">#{i} 匹配度: {result["score"]:.0f}</span>', unsafe_allow_html=True)
+                        with score_col:
+                            # 使用 st.metric 显示分数
+                            st.metric(
+                                label=t['pairing_score'],
+                                value=f"{result['score']:.1f}",
+                                delta=None
+                            )
+                            
+                            # 进度条显示归一化分数
+                            progress_value = result['score_normalized'] / 100
+                            st.progress(progress_value)
+                            
+                            # 显示分数等级
+                            if level == 'excellent':
+                                st.success(f"⭐⭐⭐⭐⭐ {t['score_excellent']}")
+                            elif level == 'good':
+                                st.info(f"⭐⭐⭐⭐ {t['score_good']}")
+                            elif level == 'average':
+                                st.warning(f"⭐⭐⭐ {t['score_average']}")
+                            else:
+                                st.error(f"⭐⭐ {t['score_poor']}")
                         
-                        with col_r2:
+                        with info_col:
                             st.markdown(f"""
                             <div class="ingredient-card">
-                                <h4>{ing['name']} <span class="category-tag">{ing['category']}</span></h4>
-                                <p><strong>共同风味 ({result['common_count']}个):</strong></p>
+                                <h4>#{i} {partner_display_name} <span class="category-tag">{ing['category']}</span></h4>
                             </div>
                             """, unsafe_allow_html=True)
                             
+                            # 根据配对类型显示不同信息
+                            if is_consonance:
+                                st.markdown(f"**{t['jaccard_score']}:** {result['jaccard']:.3f}")
+                                st.markdown(f"**{t['common_flavors']}:** {result['common_count']} {t['flavor_count']}")
+                            else:
+                                st.markdown(f"**{t['contrast_features']}:** +{result['contrast_score']} {t['pairing_score']}")
+                                st.markdown(f"**{t['category_bonus']}:** +{result['category_bonus']} {t['pairing_score']}")
+                                st.markdown(f"**{t['common_flavors']}:** {result['common_count']} {t['flavor_count']}")
+                            
                             # 显示共同风味标签
-                            common_html = ""
-                            for flavor_cn in common_cn:
-                                common_html += f'<span class="flavor-tag flavor-tag-common">{flavor_cn}</span>'
-                            st.markdown(common_html, unsafe_allow_html=True)
+                            if common_cn:
+                                st.markdown("**" + t['common_flavors'] + ":**")
+                                common_html = ""
+                                for flavor_cn in common_cn:
+                                    common_html += f'<span class="flavor-tag flavor-tag-common">{flavor_cn}</span>'
+                                st.markdown(common_html, unsafe_allow_html=True)
                             
                             # 展开查看配对原理解释
-                            with st.expander("🔬 查看配对原理"):
-                                explanation = lab.explain_pairing(
-                                    selected_name, 
-                                    ing['name'],
-                                    'consonance' if is_consonance else 'contrast'
-                                )
-                                st.markdown(explanation)
+                            with st.expander(t['view_principle']):
+                                if is_consonance:
+                                    st.markdown(f"""
+                                    **{t['consonance_label']}**
+                                    
+                                    - **Jaccard 相似度:** {result['jaccard']:.3f}
+                                    - **共有风味分子:** {result['common_count']} 个
+                                    - **原始分数:** {result['score']:.1f}
+                                    
+                                    这种搭配基于**风味共鸣**原理——当两种食材拥有大量共同的风味化合物时，
+                                    它们能够产生和谐、协调的味觉体验。
+                                    """)
+                                else:
+                                    st.markdown(f"""
+                                    **{t['contrast_label']}**
+                                    
+                                    - **对比分数:** +{result['contrast_score']}
+                                    - **类别加分:** +{result['category_bonus']}
+                                    - **交集加分:** +{result['intersection_bonus']}
+                                    - **总分数:** {result['score']}
+                                    
+                                    这种搭配基于**风味互补**原理——不同风味特征的食材通过对比和平衡，
+                                    创造出更丰富、更有层次的味觉体验。
+                                    """)
                                 
                                 # 生成菜谱建议按钮
-                                if st.button(f"🍳 生成菜谱建议", key=f"recipe_{i}"):
+                                if st.button(t['generate_recipe'], key=f"recipe_{i}"):
                                     st.info(f"""
-                                    **{selected_name} × {ing['name']} 创意菜谱**
+                                    **{display_name} × {partner_display_name}**
                                     
                                     💡 **建议烹饪方式:**
                                     - 考虑两种食材的风味特征，选择能突出共同风味的烹饪方法
                                     - 建议先小批量试做，调整比例找到最佳搭配
                                     
                                     📝 **搭配要点:**
-                                    - 共同风味: {', '.join(common_cn[:5])}
+                                    - 共同风味: {', '.join(common_cn[:5]) if common_cn else '无'}
                                     - 注意平衡两种食材的用量比例
                                     
                                     *（完整AI菜谱功能开发中...）*
@@ -698,13 +1007,13 @@ if search_query:
                         
                         st.markdown("---")
             else:
-                st.warning("未找到合适的配对结果，请尝试其他食材或调整设置。")
+                st.warning(t['no_results'])
     else:
-        st.info("未找到匹配的食材，请尝试其他关键词。")
+        st.info(t['no_match'])
 
 else:
     # 默认页面 - 展示热门食材
-    st.markdown("### 🔥 热门食材推荐")
+    st.markdown(f"### {t['popular_ingredients']}")
     
     popular_ingredients = [
         ("Strawberry", "🍓"), ("Beef", "🥩"), ("Coffee", "☕"),
@@ -716,7 +1025,8 @@ else:
     cols = st.columns(4)
     for i, (name, emoji) in enumerate(popular_ingredients):
         with cols[i % 4]:
-            if st.button(f"{emoji} {name}", key=f"pop_{name}"):
+            display_name = lab.get_ingredient_display_name({'name': name}, lang)
+            if st.button(f"{emoji} {display_name}", key=f"pop_{name}"):
                 st.session_state['search_query'] = name
                 st.rerun()
     
@@ -726,61 +1036,59 @@ else:
     col_stat1, col_stat2, col_stat3 = st.columns(3)
     
     with col_stat1:
-        st.markdown("""
+        st.markdown(f"""
         <div class="ingredient-card" style="text-align: center;">
             <h2>🥗</h2>
-            <h3>{}</h3>
-            <p>食材总数</p>
+            <h3>{len(lab.parsed_data)}</h3>
+            <p>{t['ingredient_count']}</p>
         </div>
-        """.format(len(lab.parsed_data)), unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     
     with col_stat2:
-        st.markdown("""
+        st.markdown(f"""
         <div class="ingredient-card" style="text-align: center;">
             <h2>🏷️</h2>
-            <h3>{}</h3>
-            <p>风味标签</p>
+            <h3>{len(lab.flavor_index)}</h3>
+            <p>{t['flavor_count']}</p>
         </div>
-        """.format(len(lab.flavor_index)), unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     
     with col_stat3:
-        st.markdown("""
+        st.markdown(f"""
         <div class="ingredient-card" style="text-align: center;">
             <h2>📂</h2>
-            <h3>{}</h3>
-            <p>食材类别</p>
+            <h3>{len(lab.get_categories())}</h3>
+            <p>{t['category_count']}</p>
         </div>
-        """.format(len(lab.get_categories())), unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
     # 使用说明
-    st.markdown("""
-    ### 📖 使用指南
+    st.markdown(f"""
+    ### {t['usage_guide']}
     
-    1. **🔍 搜索食材** - 在搜索框中输入食材名称（支持模糊搜索）
-    2. **📂 筛选类别** - 使用类别筛选缩小搜索范围
-    3. **🔄 选择配对模式** - 在侧边栏选择 Consonance（同味型）或 Contrast（对比味型）
-    4. **🎯 查看结果** - 系统会推荐最佳搭配食材及匹配分数
-    5. **🔬 查看原理** - 点击"查看配对原理"了解科学解释
-    6. **🍳 生成菜谱** - 获取AI生成的创意菜谱建议
+    1. **🔍 {t['search_label']}** - {t['search_placeholder']}
+    2. **📂 {t['category_filter']}** - {t['category_filter']}
+    3. **🔄 {t['pairing_mode']}** - {t['consonance_label']} / {t['contrast_label']}
+    4. **🎯 {t['recommendations']}** - {t['pairing_score']}
+    5. **🔬 {t['view_principle']}** - {t['science_principle']}
+    6. **🍳 {t['generate_recipe']}** - AI
     
-    ### 🧪 科学原理
+    ### {t['science_principle']}
     
-    **同味型叠加 (Consonance)**  
-    基于共享风味分子的搭配原理。当两种食材含有大量共同的风味化合物时，
-    它们会产生和谐、协调的味觉体验。这是经典搭配（如番茄+罗勒）的科学基础。
+    **{t['consonance_label']}**  
+    {t['consonance_desc']}
     
-    **对比味型 (Contrast)**  
-    基于风味互补的搭配原理。不同风味特征的食材通过对比和平衡，
-    创造出更丰富、更有层次的味觉体验。例如甜味与酸味的平衡。
+    **{t['contrast_label']}**  
+    {t['contrast_desc']}
     """)
 
 # ============== 页脚 ==============
 st.markdown("---")
-st.markdown("""
+st.markdown(f"""
 <div style="text-align: center; color: #666; padding: 1rem;">
-    <p>🧪 分子风味配对实验室 | Molecular Flavor Lab</p>
-    <p style="font-size: 0.8rem;">Powered by FlavorDB | Data-driven Ingredient Pairing</p>
+    <p>{t['footer']}</p>
+    <p style="font-size: 0.8rem;">{t['footer_sub']}</p>
 </div>
 """, unsafe_allow_html=True)
