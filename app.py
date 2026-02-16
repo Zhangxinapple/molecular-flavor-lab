@@ -1,793 +1,292 @@
-"""
-分子风味配对实验室 (Molecular Flavor Lab) - V6.0 终极重构版
-强力数据清洗 | 视觉交互升级 | 科学逻辑 | 风险预警
-"""
-
 import streamlit as st
 import pandas as pd
-from collections import Counter
-import os
 import plotly.graph_objects as go
+import random
+import os
 
-# ============== 页面配置 ==============
-st.set_page_config(
-    page_title="分子风味配对实验室",
-    page_icon="🧪",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# ==========================================
+# 1. AI 核心引擎：《味觉虫洞》 (Gem Persona)
+# ==========================================
+class TasteWormholeAgent:
+    def __init__(self):
+        # --- 核心汉化词典 ---
+        self.name_map = {
+            "bamboo shoots": "竹笋", "coffee": "咖啡", "dark chocolate": "黑巧克力",
+            "green tea": "绿茶", "strawberry": "草莓", "apple": "苹果", "banana": "香蕉",
+            "bread": "面包", "butter": "黄油", "cheese": "芝士", "tomato": "番茄",
+            "pork": "猪肉", "beef": "牛肉", "chicken": "鸡肉", "shrimp": "虾",
+            "bakery products": "烘焙制品", "dairy": "乳制品", "meat": "肉类",
+            "potato": "土豆", "onion": "洋葱", "garlic": "大蒜", "ginger": "生姜",
+            "mushroom": "蘑菇", "honey": "蜂蜜", "milk": "牛奶", "wine": "红酒",
+            "soy sauce": "酱油", "rice": "米饭", "egg": "鸡蛋", "lemon": "柠檬"
+        }
+        # --- 风味属性映射 (用于计算 AI 坐标) ---
+        self.flavor_attrs = {
+            "green": "高频/挥发性/瞬时", "citrus": "极光/穿透力/酸", "spicy": "痛感/热能/缭绕",
+            "roasted": "低频/基底/美拉德", "earthy": "沉降/暗调/后韵", "fatty": "包覆/介质/宽",
+            "sweet": "填充/柔和/连接", "fruity": "中频/跳跃/甜酸", "floral": "轻盈/飘逸/前调"
+        }
+        # --- 风味名词汉化 ---
+        self.flavor_cn = {
+            "roasted": "烘焙感", "sweet": "甜美", "earthy": "大地息", "fruity": "果香",
+            "green": "青草气", "spicy": "辛香", "fatty": "油脂感", "floral": "花香",
+            "nutty": "坚果味", "woody": "木质调", "bitter": "苦味", "sulfurous": "硫味",
+            "citrus": "柑橘调", "creamy": "奶油感", "smoky": "烟熏", "caramel": "焦糖"
+        }
 
-# ============== 自定义CSS（视觉升级）=============
+    def t(self, text, type='name'):
+        """智能翻译与美化函数"""
+        t_low = str(text).lower().strip()
+        if type == 'name': 
+            return self.name_map.get(t_low, t_low.replace("_", " ").title())
+        # 风味翻译逻辑
+        for k, v in self.flavor_cn.items():
+            if k in t_low: return v
+        # 分子名美化兜底
+        if "acid" in t_low: return "有机酸"
+        if "alcohol" in t_low: return "醇香"
+        if "aldehyde" in t_low: return "醛香"
+        return t_low.title()
+
+    def analyze_frequency(self, mol_set):
+        """AI 分析：计算食材的‘频率’属性"""
+        high_freq = ["green", "citrus", "spicy", "floral", "fruit", "mint", "aldehyde"]
+        low_freq = ["roasted", "earthy", "fatty", "nutty", "woody", "meat", "sulfur"]
+        
+        h_score = sum(1 for m in mol_set if any(k in m.lower() for k in high_freq))
+        l_score = sum(1 for m in mol_set if any(k in m.lower() for k in low_freq))
+        
+        if h_score > l_score * 1.5: return "高频·挥发性·上扬"
+        if l_score > h_score * 1.5: return "低频·沉降感·基底"
+        return "中频·平衡·融合"
+
+    def generate_report(self, ing1_name, ing2_name, score, common_mols, ing1_mols, ing2_mols):
+        """生成《味觉虫洞》风格的 5 模块实验报告"""
+        
+        n1 = self.t(ing1_name)
+        n2 = self.t(ing2_name)
+
+        # 1. 🛰️ 虫洞坐标
+        coord1 = self.analyze_frequency(ing1_mols)
+        coord2 = self.analyze_frequency(ing2_mols)
+        
+        # 2. 🌀 关联逻辑
+        if score > 7.5:
+            logic_title = "分子共鸣 (Molecular Resonance)"
+            logic_desc = "两者共享大量关键香气分子，味觉波形完美重叠。这是一种‘同频共振’，能产生 1+1>2 的味觉增幅。"
+        elif score > 4.0:
+            logic_title = "维度补偿 (Dimension Balance)"
+            logic_desc = "存在部分连接点，但更多的是互补。一方提供骨架（如基底感），另一方提供血肉（如挥发香），形成完整的味觉闭环。"
+        else:
+            logic_title = "极光效应 (Aurora Effect)"
+            logic_desc = "强烈的反差制造了‘鼻腔冲击力’。利用风味分子的冲突，制造类似芥末或跳跳糖般的感官极光，打破常规味觉疲劳。"
+
+        # 3. 🧪 实验报告 (感官推演)
+        common_desc = [self.t(m, 'flavor') for m in list(common_mols)[:3]]
+        common_str = "、".join(common_desc) if common_desc else "隐性连接"
+        
+        if score > 6:
+            report = f"入口瞬间，{n1}与{n2}的界限坍缩，爆发出一股{common_str}的混合香气。中段口感致密，尾韵在口腔中形成长久的共振。"
+        else:
+            report = f"入口是{n1}的特立独行，紧接着{n2}的香气穿透而来。这种‘冲突美学’在舌根处完成和解，留下一丝{common_str}的神秘回甘。"
+
+        # 4. 👨‍🍳 厨师应用 (随机创意)
+        apps = []
+        if "高频" in coord1 or "高频" in coord2:
+            apps.append("🥗 **前菜/冷盘：** 利用其高挥发性，做成冷萃酱汁或分子泡沫，瞬间打开味蕾。")
+        if "低频" in coord1 or "低频" in coord2:
+            apps.append("🥩 **主菜/酱汁：** 利用油脂或慢煮工艺，锁住低频香气，作为红肉的灵魂伴侣。")
+        if score < 5:
+             apps.append("🍸 **创意特调：** 利用反差感，制作一款具有‘分层口感’的鸡尾酒。")
+        else:
+             apps.append("🍰 **甜点/慕斯：** 高度融合的特性适合制作慕斯，口感无缝衔接。")
+        
+        # 确保总有建议
+        if not apps: apps = ["🥘 **融合料理：** 尝试将其打碎混合，制作风味独特的复合黄油。"]
+        chef_app = "<br>".join(random.sample(apps, min(2, len(apps))))
+
+        # 5. 📊 风味星图参数
+        if score > 8:
+            params = "建议配比 **1:1** | 技术关键：**共融** (如炖煮、乳化)"
+        elif score > 4:
+            params = "建议配比 **1:3** (以低频食材为主) | 技术关键：**承载** (如油脂浸渍)"
+        else:
+            params = "建议配比 **1:10** (极少量点缀) | 技术关键：**触发** (如喷雾、擦丝)"
+
+        # 生成 HTML 卡片
+        html = f"""
+        <div class="wormhole-box">
+            <p><strong>🛰️ 虫洞坐标：</strong><br>
+            <span style="color:#1d1d1f">[{n1}: {coord1}]</span> <span style="color:#0071e3">⚡</span> <span style="color:#1d1d1f">[{n2}: {coord2}]</span></p>
+            
+            <p style="margin-top:12px;"><strong>🌀 关联逻辑：{logic_title}</strong><br>
+            <span style="color:#666">{logic_desc}</span></p>
+            
+            <p style="margin-top:12px;"><strong>🧪 实验报告：</strong><br>
+            <span style="color:#666">{report}</span></p>
+            
+            <p style="margin-top:12px;"><strong>👨‍🍳 厨师应用：</strong><br>
+            {chef_app}</p>
+            
+            <hr style="border-top: 1px dashed #d1d1d6; margin: 15px 0;">
+            <p style="font-size:0.8rem; color:#86868b"><strong>📊 风味星图参数：</strong> {params}</p>
+        </div>
+        """
+        return html
+
+# 实例化 AI 代理
+ai = TasteWormholeAgent()
+
+# ==========================================
+# 2. 页面配置与视觉样式 (Apple Style)
+# ==========================================
+st.set_page_config(page_title="味觉虫洞 Flavor Lab", page_icon="🧪", layout="wide")
+
 st.markdown("""
 <style>
-    /* 全局样式 */
-    .main { 
-        background: linear-gradient(135deg, #faf8f5 0%, #f5f0e8 100%); 
-        color: #2c3e50; 
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700&display=swap');
+    
+    .stApp { 
+        background: #f5f5f7; 
+        font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: #1d1d1f;
     }
     
+    /* 苹果风格卡片 */
+    .apple-card {
+        background: rgba(255, 255, 255, 0.85); 
+        backdrop-filter: blur(20px);
+        border-radius: 20px; 
+        padding: 24px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.04); 
+        border: 1px solid rgba(255,255,255,0.4);
+        margin-bottom: 20px;
+        transition: transform 0.2s ease;
+    }
+    .apple-card:hover { transform: translateY(-2px); }
+
     /* 标题 */
-    .main-title {
-        font-size: 2.8rem !important; 
-        font-weight: 700;
-        background: linear-gradient(90deg, #2D5A27, #4a7c43);
-        -webkit-background-clip: text; 
-        -webkit-text-fill-color: transparent;
-        text-align: center; 
-        margin-bottom: 0.5rem;
-    }
-    .subtitle { 
-        text-align: center; 
-        color: #666; 
-        font-size: 1.1rem; 
-        margin-bottom: 2rem;
-    }
+    h1, h2, h3 { font-weight: 700 !important; letter-spacing: -0.5px; }
     
-    /* 分数徽章 */
-    .score-badge {
-        display: inline-block;
-        background: linear-gradient(135deg, #FFD700, #FFA500);
-        color: white;
-        padding: 0.5rem 1.5rem;
-        border-radius: 25px;
-        font-weight: 700;
-        font-size: 1.5rem;
-        box-shadow: 0 4px 15px rgba(255, 165, 0, 0.4);
-        margin-bottom: 1rem;
+    /* 分数勋章 */
+    .score-badge { 
+        background: linear-gradient(135deg, #0071e3, #00c7be); 
+        color: white; 
+        padding: 4px 12px; 
+        border-radius: 99px; 
+        font-weight: 700; 
+        font-size: 1rem;
+        box-shadow: 0 2px 10px rgba(0, 113, 227, 0.3);
     }
-    .score-badge-high {
-        background: linear-gradient(135deg, #00C853, #64DD17);
-    }
-    .score-badge-medium {
-        background: linear-gradient(135deg, #FFD600, #FFAB00);
-    }
-    .score-badge-low {
-        background: linear-gradient(135deg, #FF5252, #FF1744);
-    }
+
+    /* 标签 Pill */
+    .pill { display: inline-block; padding: 3px 10px; margin: 3px; border-radius: 8px; font-size: 0.75rem; font-weight: 500;}
+    .pill-common { background: #e3f2fd; color: #0277bd; }
     
-    /* 风味标签 */
-    .flavor-tag {
-        display: inline-block;
-        background: #f0f0f0;
-        color: #555;
-        padding: 0.3rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        margin: 0.2rem;
-        border: 1px solid #ddd;
-    }
-    .flavor-tag-common {
-        background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
-        color: #2E7D32;
-        border-color: #A5D6A7;
-        font-weight: 600;
-    }
-    
-    /* 维度标签 */
-    .dim-green { background: #E8F5E9; color: #2E7D32; border-color: #81C784; }
-    .dim-brown { background: #EFEBE9; color: #5D4037; border-color: #A1887F; }
-    .dim-pink { background: #FCE4EC; color: #C2185B; border-color: #F48FB1; }
-    .dim-orange { background: #FFF3E0; color: #E65100; border-color: #FFCC80; }
-    .dim-purple { background: #F3E5F5; color: #7B1FA2; border-color: #CE93D8; }
-    .dim-red { background: #FFEBEE; color: #C62828; border-color: #EF9A9A; }
-    
-    /* 风险警告 */
-    .risk-warning {
-        background: linear-gradient(135deg, #FFF8E1, #FFECB3);
-        border-left: 5px solid #FFC107;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-    }
-    .risk-danger {
-        background: linear-gradient(135deg, #FFEBEE, #FFCDD2);
-        border-left: 5px solid #F44336;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-    }
-    
-    /* 洞察卡片 */
-    .insight-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin: 1rem 0;
-        border: 1px solid #e0e0e0;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    .insight-consonance {
-        border-left: 5px solid #4CAF50;
-        background: linear-gradient(135deg, #F1F8E9, #ffffff);
-    }
-    .insight-contrast {
-        border-left: 5px solid #FF9800;
-        background: linear-gradient(135deg, #FFF8E1, #ffffff);
-    }
-    
-    /* Vegan徽章 */
-    .vegan-badge {
-        display: inline-block;
-        background: linear-gradient(135deg, #2D5A27, #4a7c43);
-        color: white;
-        padding: 0.4rem 1rem;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-    }
-    
-    /* 进度条 */
-    .stProgress > div > div {
-        background: linear-gradient(90deg, #4CAF50, #8BC34A) !important;
+    /* 虫洞 AI 盒子 */
+    .wormhole-box { 
+        background: #fbfbfd; 
+        border-radius: 16px; 
+        padding: 20px; 
+        font-size: 0.9rem; 
+        line-height: 1.6;
+        border-left: 4px solid #0071e3;
+        margin-top: 15px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ============== 风味维度分类（6大科学维度）=============
-FLAVOR_DIMENSIONS = {
-    "green_herbal": {
-        "name": "🌿 草本/清新",
-        "color": "#4CAF50",
-        "css_class": "dim-green",
-        "keywords": ["green", "grassy", "leafy", "herbal", "fresh", "mint", "peppermint", "menthol",
-                     "basil", "parsley", "cilantro", "dill", "chives", "watercress", "spinach",
-                     "cucumber", "celery", "lettuce", "cabbage", "eucalyptus", "camphor", "thyme",
-                     "oregano", "sage", "rosemary", "lavender", "jasmine", "lily", "floral"]
-    },
-    "roasted_nutty": {
-        "name": "🥜 烘焙/坚果",
-        "color": "#795548",
-        "css_class": "dim-brown",
-        "keywords": ["roasted", "toasted", "baked", "burnt", "caramel", "caramellic", "butterscotch",
-                     "nutty", "almond", "hazelnut", "walnut", "peanut", "chestnut", "coconut",
-                     "popcorn", "malt", "bread", "bready", "cereal", "coffee", "cocoa", "chocolate",
-                     "vanilla", "maple", "honey", "brown", "smoky", "smoke"]
-    },
-    "floral_fruity": {
-        "name": "🌸 花果/甜润",
-        "color": "#E91E63",
-        "css_class": "dim-pink",
-        "keywords": ["fruity", "sweet", "citrus", "apple", "pear", "peach", "apricot", "plum",
-                     "cherry", "strawberry", "raspberry", "blueberry", "blackberry", "pineapple",
-                     "banana", "grape", "grapefruit", "lemon", "lime", "orange", "melon",
-                     "tropical", "berry", "rose", "jasmine", "lily", "lavender", "honeysuckle",
-                     "violet", "peony", "carnation", "floral", "perfume", "fragrant"]
-    },
-    "earthy_woody": {
-        "name": "🍄 泥土/菌菇",
-        "color": "#FF9800",
-        "css_class": "dim-orange",
-        "keywords": ["earthy", "woody", "wood", "mushroom", "truffle", "moss", "musty", "damp",
-                     "forest", "balsam", "balsamic", "resin", "resinous", "pine", "cedar",
-                     "sandalwood", "root", "beetroot", "potato", "carrot", "turnip", "radish",
-                     "ginger", "turmeric", "galangal"]
-    },
-    "animalic_fatty": {
-        "name": "🥩 动物/油脂",
-        "color": "#9C27B0",
-        "css_class": "dim-purple",
-        "keywords": ["meaty", "beef", "chicken", "pork", "lamb", "fatty", "oily", "waxy",
-                     "butter", "buttery", "creamy", "milky", "cheese", "cheesy", "egg",
-                     "fishy", "seafood", "oyster", "clam", "mussel", "liver", "blood"]
-    },
-    "spicy_pungent": {
-        "name": "🌶️ 辛辣/药香",
-        "color": "#F44336",
-        "css_class": "dim-red",
-        "keywords": ["spicy", "spice", "pungent", "peppery", "hot", "sharp", "strong",
-                     "garlic", "onion", "chive", "leek", "scallion", "shallot", "hing", "asafoetida",
-                     "clove", "cinnamon", "nutmeg", "cardamom", "pepper", "chili", "wasabi",
-                     "horseradish", "mustard", "ginger", "medicinal", "medical", "phenolic",
-                     "sulfur", "sulfurous", "ammonia", "urine", "fecal", "bitter"]
-    }
-}
+# ==========================================
+# 3. 数据处理与绘图
+# ==========================================
+@st.cache_data
+def load_data():
+    if not os.path.exists('flavordb_data.csv'): return None
+    df = pd.read_csv('flavordb_data.csv').fillna('')
+    # 清洗：过滤无数据的食材
+    df = df[df['molecules_count'] > 0]
+    df['mol_set'] = df['flavors'].apply(lambda x: set(str(x).replace('@', ',').split(',')))
+    # 生成中文显示列
+    df['display_name'] = df['name'].apply(lambda x: f"{ai.t(x)} ({x})")
+    return df
 
-# ============== 风险词汇配置 ==============
-RISK_KEYWORDS = {
-    "sulfur": {"level": "warning", "message": "⚠️ **硫化物警示**：检测到硫化物风味（葱蒜类辛香），比例不当可能产生过重气味。建议通过高温煎炸（美拉德反应）来中和。"},
-    "sulfurous": {"level": "warning", "message": "⚠️ **硫化物警示**：高浓度硫化物风味，建议控制用量。"},
-    "fecal": {"level": "danger", "message": "🚨 **动物异香警示**：检测到粪便/动物异香类分子，常见于某些奶酪或发酵食品。建议谨慎搭配。"},
-    "ammonia": {"level": "warning", "message": "⚠️ **氨味警示**：检测到氨类风味，可能来自海鲜或陈年奶酪。建议搭配酸性食材平衡。"},
-    "rancid": {"level": "warning", "message": "⚠️ **酸败警示**：检测到酸败/油脂氧化风味。确保食材新鲜。"},
-    "fishy": {"level": "warning", "message": "⚠️ **鱼腥警示**：检测到鱼腥类分子。建议搭配姜、葱、柠檬去腥。"},
-    "bitter": {"level": "warning", "message": "⚠️ **苦味警示**：检测到苦味分子。建议搭配甜味或油脂平衡。"},
-}
+def draw_radar(mols):
+    dims = {"草本": ["green", "grass"], "果香": ["fruit", "berry"], "烘焙": ["roasted", "nutty"], 
+            "大地": ["earthy", "wood"], "辛辣": ["spicy", "pepper"], "油脂": ["fatty", "creamy"]}
+    vals = []
+    for keys in dims.values():
+        val = sum(1 for m in mols if any(k in m.lower() for k in keys))
+        vals.append(min(val * 1.5, 10)) # 归一化到 0-10
+    
+    fig = go.Figure(data=go.Scatterpolar(r=vals, theta=list(dims.keys()), fill='toself', line_color='#0071e3'))
+    fig.update_layout(
+        polar=dict(radialaxis=dict(visible=False, range=[0, 10])), 
+        showlegend=False, 
+        height=180, 
+        margin=dict(t=10,b=10,l=10,r=10), 
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(size=12, color="#86868b")
+    )
+    return fig
 
-# ============== Vegan 配置 ==============
-NON_VEGAN_CATEGORIES = ['Meat', 'Seafood', 'Fish', 'Poultry', 'Dairy', 'Egg']
-WUXIN_KEYWORDS = ['onion', 'garlic', 'chive', 'leek', 'scallion', 'shallot', 'asafoetida', 'hing']
+# ==========================================
+# 4. 主界面逻辑
+# ==========================================
+df = load_data()
 
-# ============== 汉化字典（厨师感官）=============
-FLAVOR_TRANSLATIONS = {
-    # 基础味觉
-    'sweet': '甜味', 'bitter': '苦味', 'sour': '酸味', 'salty': '咸味', 'umami': '鲜味',
-    # 果香
-    'fruity': '果香', 'citrus': '柑橘香', 'apple': '苹果香', 'pear': '梨香', 'peach': '桃香',
-    'apricot': '杏香', 'plum': '李子香', 'cherry': '樱桃香', 'strawberry': '草莓香',
-    'raspberry': '覆盆子香', 'blueberry': '蓝莓香', 'pineapple': '菠萝香', 'banana': '香蕉香',
-    'grape': '葡萄香', 'grapefruit': '葡萄柚香', 'lemon': '柠檬香', 'lime': '青柠香',
-    'orange': '橙香', 'melon': '甜瓜香', 'tropical': '热带果香', 'berry': '浆果香',
-    # 花香
-    'floral': '花香', 'rose': '玫瑰香', 'jasmine': '茉莉香', 'lily': '百合香',
-    'lavender': '薰衣草香', 'honeysuckle': '金银花香', 'violet': '紫罗兰香',
-    'peony': '牡丹香', 'carnation': '康乃馨香',
-    # 草本
-    'herbal': '草本香', 'mint': '薄荷香', 'peppermint': '薄荷醇香', 'menthol': '清凉薄荷',
-    'thyme': '百里香', 'basil': '罗勒香', 'parsley': '欧芹香', 'cilantro': '香菜香',
-    'dill': '莳萝香', 'chives': '细香葱', 'sage': '鼠尾草', 'rosemary': '迷迭香',
-    # 香料
-    'cinnamon': '肉桂香', 'clove': '丁香', 'vanilla': '香草甜', 'anise': '茴香',
-    'camphor': '樟脑', 'eucalyptus': '桉树香', 'green': '青草香', 'grassy': '草香',
-    'leafy': '叶香', 'hay': '干草香',
-    # 坚果
-    'nutty': '坚果香', 'almond': '杏仁香', 'hazelnut': '榛子香', 'walnut': '核桃香',
-    'peanut': '花生香', 'coconut': '椰香', 'popcorn': '爆米花香', 'malt': '麦芽香',
-    'bread': '面包香', 'bready': '烘焙香', 'cereal': '谷物香',
-    # 烘焙
-    'roasted': '烘焙香', 'caramel': '焦糖香', 'caramellic': '焦糖甜', 'butterscotch': '奶油糖',
-    'butter': '黄油香', 'buttery': '黄油感', 'creamy': '奶油感', 'milky': '奶香',
-    'cheese': '奶酪香', 'cheesy': '奶酪味', 'chocolate': '巧克力香', 'cocoa': '可可香',
-    'coffee': '咖啡香', 'burnt': '焦香', 'smoky': '烟熏香', 'smoke': '烟味',
-    'baked': '烘烤香', 'toasted': '烘烤香',
-    # 泥土
-    'woody': '木香', 'wood': '木质', 'earthy': '泥土香', 'mushroom': '蘑菇香',
-    'musty': '霉味', 'moss': '苔藓香', 'balsam': '香脂', 'balsamic': '香醋',
-    'resin': '树脂', 'resinous': '树脂味', 'pine': '松木香', 'cedar': '雪松香',
-    'sandalwood': '檀香', 'truffle': '松露香',
-    # 其他
-    'fresh': '清新', 'waxy': '蜡质', 'fatty': '油脂感', 'oily': '油润',
-    'pungent': '辛辣', 'spicy': '香料', 'spice': '辛香', 'peppery': '胡椒',
-    'warm': '温暖', 'cool': '清凉', 'medicinal': '药草', 'medical': '药香',
-    'phenolic': '酚类', 'sulfur': '硫磺', 'sulfurous': '葱蒜辛香',
-    'meaty': '肉香', 'beef': '牛肉香', 'chicken': '鸡肉香', 'wine': '酒香',
-    'alcoholic': '酒精', 'alcohol': '酒味', 'fermented': '发酵香', 'vinegar': '醋香',
-    'acid': '酸性', 'acidic': '酸味', 'sharp': '尖锐', 'strong': '浓烈',
-    'mild': '温和', 'faint': '微弱', 'odorless': '无味', 'fragrant': '芳香',
-    'aromatic': '香气', 'perfume': '香水', 'powdery': '粉质', 'soapy': '皂香',
-    'plastic': '塑料', 'rubber': '橡胶', 'chemical': '化学味', 'gasoline': '汽油',
-    'ether': '乙醚', 'ethereal': '飘渺', 'solvent': '溶剂', 'metallic': '金属',
-    'leather': '皮革', 'raw': '生青', 'tomato': '番茄', 'potato': '土豆',
-    'onion': '洋葱', 'garlic': '大蒜', 'cabbage': '卷心菜', 'pea': '豌豆',
-    'cucumber': '黄瓜', 'seaweed': '海藻', 'egg': '蛋香', 'honey': '蜂蜜甜',
-    'maple': '枫糖', 'sugar': '糖甜', 'jam': '果酱', 'candy': '糖果',
-    'saffron': '藏红花', 'caviar': '鱼子酱',
-}
+if df is not None:
+    st.markdown("<h1 style='text-align:center; margin-bottom: 30px;'>🌌 味觉虫洞 <span style='font-weight:300; font-size:1.5rem'>Flavor Lab</span></h1>", unsafe_allow_html=True)
+    
+    # 侧边栏
+    st.sidebar.header("🧪 实验控制台")
+    selected_displays = st.sidebar.multiselect(
+        "选择食材开启虫洞 (建议 2-3 种):", 
+        options=sorted(df['display_name'].unique()),
+        default=sorted(df['display_name'].unique())[:2]
+    )
 
-# ============== 食材翻译 ==============
-INGREDIENT_TRANSLATIONS = {
-    'apple': '苹果', 'apricot': '杏', 'avocado': '牛油果', 'banana': '香蕉',
-    'cherry': '樱桃', 'grape': '葡萄', 'grapefruit': '葡萄柚', 'kiwi': '猕猴桃',
-    'lemon': '柠檬', 'lime': '青柠', 'lychee': '荔枝', 'mango': '芒果',
-    'melon': '甜瓜', 'orange': '橙子', 'papaya': '木瓜', 'peach': '桃子',
-    'pear': '梨', 'pineapple': '菠萝', 'plum': '李子', 'pomegranate': '石榴',
-    'pomelo': '柚子', 'raspberry': '覆盆子', 'strawberry': '草莓', 'watermelon': '西瓜',
-    'blackberry': '黑莓', 'blueberry': '蓝莓', 'mulberry': '桑葚',
-    'artichoke': '洋蓟', 'asparagus': '芦笋', 'broccoli': '西兰花',
-    'cabbage': '卷心菜', 'carrot': '胡萝卜', 'cauliflower': '花椰菜',
-    'celery': '芹菜', 'corn': '玉米', 'cucumber': '黄瓜', 'eggplant': '茄子',
-    'fennel': '茴香', 'lettuce': '生菜', 'mushroom': '蘑菇',
-    'pea': '豌豆', 'pepper': '辣椒', 'potato': '土豆', 'pumpkin': '南瓜',
-    'radish': '萝卜', 'spinach': '菠菜', 'squash': '南瓜', 'tomato': '西红柿',
-    'zucchini': '西葫芦', 'bamboo shoots': '竹笋', 'lotus root': '莲藕',
-    'water chestnut': '荸荠', 'okra': '秋葵',
-    'basil': '罗勒', 'bay leaf': '月桂叶', 'cinnamon': '肉桂', 'clove': '丁香',
-    'coriander': '香菜籽', 'cumin': '孜然', 'dill': '莳萝', 'mint': '薄荷',
-    'nutmeg': '肉豆蔻', 'oregano': '牛至', 'parsley': '欧芹', 'peppermint': '薄荷',
-    'rosemary': '迷迭香', 'saffron': '藏红花', 'sage': '鼠尾草', 'thyme': '百里香',
-    'turmeric': '姜黄', 'vanilla': '香草', 'cardamom': '豆蔻', 'star anise': '八角',
-    'ginger': '姜', 'wasabi': '芥末', 'horseradish': '辣根',
-    'beef': '牛肉', 'chicken': '鸡肉', 'duck': '鸭肉', 'lamb': '羊肉',
-    'pork': '猪肉', 'turkey': '火鸡肉', 'veal': '小牛肉', 'venison': '鹿肉',
-    'bacon': '培根', 'ham': '火腿', 'sausage': '香肠',
-    'anchovy': '凤尾鱼', 'clam': '蛤蜊', 'cod': '鳕鱼', 'crab': '蟹',
-    'lobster': '龙虾', 'mackerel': '鲭鱼', 'mussel': '青口', 'octopus': '章鱼',
-    'oyster': '生蚝', 'salmon': '三文鱼', 'sardine': '沙丁鱼', 'scallop': '扇贝',
-    'shrimp': '虾', 'squid': '鱿鱼', 'tuna': '金枪鱼',
-    'blue cheese': '蓝纹奶酪', 'butter': '黄油', 'cheese': '奶酪', 'cream': '奶油',
-    'feta': '菲达奶酪', 'milk': '牛奶', 'mozzarella': '马苏里拉奶酪',
-    'parmesan': '帕尔马干酪', 'yogurt': '酸奶', 'ice cream': '冰淇淋',
-    'bread': '面包', 'croissant': '牛角包', 'bagel': '百吉饼', 'baguette': '法棍',
-    'muffin': '马芬', 'pita': '皮塔饼', 'pretzel': '椒盐卷饼',
-    'almond': '杏仁', 'cashew': '腰果', 'chestnut': '栗子', 'coconut': '椰子',
-    'hazelnut': '榛子', 'peanut': '花生', 'pistachio': '开心果', 'walnut': '核桃',
-    'macadamia': '夏威夷果', 'pine nut': '松子', 'pecan': '山核桃',
-    'bean': '豆类', 'chickpea': '鹰嘴豆', 'lentil': '小扁豆', 'soybean': '大豆',
-    'tofu': '豆腐', 'edamame': '毛豆', 'mung bean': '绿豆',
-    'beer': '啤酒', 'brandy': '白兰地', 'coffee': '咖啡', 'gin': '金酒',
-    'green tea': '绿茶', 'black tea': '红茶', 'red wine': '红酒', 'rum': '朗姆酒',
-    'sake': '清酒', 'vodka': '伏特加', 'whiskey': '威士忌', 'white wine': '白葡萄酒',
-    'wine': '葡萄酒', 'champagne': '香槟', 'cider': '苹果酒',
-    'egg': '鸡蛋', 'honey': '蜂蜜', 'sugar': '糖', 'vinegar': '醋',
-    'maple syrup': '枫糖浆', 'molasses': '糖蜜', 'yeast': '酵母',
-}
+    if 1 < len(selected_displays) <= 4:
+        cols = st.columns(len(selected_displays))
+        # 获取基准食材
+        base_row = df[df['display_name'] == selected_displays[0]].iloc[0]
 
-INGREDIENT_TRANSLATIONS_REVERSE = {v: k for k, v in INGREDIENT_TRANSLATIONS.items()}
-
-CATEGORY_TRANSLATIONS = {
-    'Fruit': '水果', 'Berry': '浆果', 'Vegetable': '蔬菜',
-    'Vegetable Root': '根茎蔬菜', 'Vegetable Fruit': '果菜',
-    'Herb': '香草', 'Spice': '香料', 'Meat': '肉类', 'Fish': '鱼类',
-    'Seafood': '海鲜', 'Dairy': '乳制品', 'Bakery': '烘焙', 'Cereal': '谷物',
-    'Nut': '坚果', 'Legume': '豆类', 'Beverage': '饮品',
-    'Beverage Alcoholic': '酒精饮品', 'Beverage Caffeinated': '咖啡因饮品',
-    'Essential Oil': '精油', 'Egg': '蛋品',
-}
-
-# ============== 核心类 ==============
-class MolecularFlavorLab:
-    def __init__(self, csv_path='flavordb_data.csv', vegan_mode=True):
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        full_path = os.path.join(base_dir, csv_path)
-        self.df = pd.read_csv(full_path)
-        self.vegan_mode = vegan_mode
-        self.parsed_data = self._parse_and_filter_data()
-        self.name_index = self._build_name_index()
-        
-    def _parse_and_filter_data(self):
-        """强力数据清洗 + Vegan过滤"""
-        parsed = []
-        for idx, row in self.df.iterrows():
-            # Vegan过滤
-            if self.vegan_mode:
-                if row['category'] in NON_VEGAN_CATEGORIES:
-                    continue
-                name_lower = row['name'].lower()
-                if any(w in name_lower for w in WUXIN_KEYWORDS):
-                    continue
+        for i, d_name in enumerate(selected_displays):
+            row = df[df['display_name'] == d_name].iloc[0]
+            common = base_row['mol_set'].intersection(row['mol_set'])
+            score = round(len(common) * 1.5, 1) if i > 0 else 10.0
             
-            molecules = self._extract_molecules(row)
-            if molecules:
-                # 计算风味维度
-                dimensions = self._calculate_dimensions(molecules)
+            with cols[i]:
+                # 卡片容器
+                st.markdown(f"""
+                <div class="apple-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <div style="font-size:1.4rem; font-weight:700;">{ai.t(row['name'])}</div>
+                        <span class="score-badge">{"基准" if i == 0 else f"{score}分"}</span>
+                    </div>
+                    <div style="color:#86868b; font-size:0.8rem; margin-bottom:10px;">{ai.t(row['category'])}</div>
+                """, unsafe_allow_html=True)
                 
-                parsed.append({
-                    'id': row['id'],
-                    'name': row['name'],
-                    'cn_name': INGREDIENT_TRANSLATIONS.get(row['name'].lower(), row['name']),
-                    'category': row['category'],
-                    'cn_category': CATEGORY_TRANSLATIONS.get(row['category'], row['category']),
-                    'molecules': molecules,
-                    'molecule_set': set(molecules),
-                    'molecule_count': len(molecules),
-                    'dimensions': dimensions
-                })
-        return parsed
-    
-    def _extract_molecules(self, row):
-        """强力数据清洗：处理@符号分隔符"""
-        molecules = []
-        
-        # 优先使用 flavors 字段（包含@分隔符）
-        if pd.notna(row.get('flavors')):
-            flavor_str = str(row['flavors'])
-            # 关键：将@替换为逗号，然后分割
-            flavor_str = flavor_str.replace('@', ',')
-            molecules = [m.strip().lower() for m in flavor_str.split(',') if m.strip()]
-        
-        # 其次使用 sample_molecules
-        elif pd.notna(row.get('sample_molecules')):
-            mol_str = str(row['sample_molecules'])
-            mol_str = mol_str.replace('@', ',')
-            molecules = [m.strip().lower() for m in mol_str.split(',') if m.strip()]
-        
-        # 最后使用 flavor_profiles
-        elif pd.notna(row.get('flavor_profiles')):
-            profile_str = str(row['flavor_profiles'])
-            profile_str = profile_str.replace('@', ',')
-            molecules = [p.strip().lower() for p in profile_str.split(',') if p.strip()]
-        
-        return molecules
-    
-    def _calculate_dimensions(self, molecules):
-        """计算6大风味维度分布"""
-        dimensions = {key: 0 for key in FLAVOR_DIMENSIONS.keys()}
-        
-        for mol in molecules:
-            mol_lower = mol.lower()
-            for dim_key, dim_data in FLAVOR_DIMENSIONS.items():
-                if any(kw in mol_lower for kw in dim_data['keywords']):
-                    dimensions[dim_key] += 1
-        
-        return dimensions
-    
-    def _build_name_index(self):
-        """构建名称索引"""
-        index = {}
-        for item in self.parsed_data:
-            en_name = item['name'].lower()
-            index[en_name] = item
-            cn_name = item['cn_name']
-            if cn_name and cn_name != item['name']:
-                index[cn_name.lower()] = item
-        return index
-    
-    def search_ingredients(self, query, limit=20):
-        """搜索食材（支持中英文）"""
-        if not query:
-            return []
-        query_lower = query.lower().strip()
-        results = []
-        matched_ids = set()
-        
-        # 精确匹配中文名
-        if query_lower in INGREDIENT_TRANSLATIONS_REVERSE:
-            en_name = INGREDIENT_TRANSLATIONS_REVERSE[query_lower]
-            for item in self.parsed_data:
-                if item['name'].lower() == en_name.lower() and item['id'] not in matched_ids:
-                    results.append(item)
-                    matched_ids.add(item['id'])
-        
-        # 精确匹配英文名
-        for item in self.parsed_data:
-            if item['name'].lower() == query_lower and item['id'] not in matched_ids:
-                results.append(item)
-                matched_ids.add(item['id'])
-        
-        # 模糊匹配英文名
-        for item in self.parsed_data:
-            if query_lower in item['name'].lower() and item['id'] not in matched_ids:
-                results.append(item)
-                matched_ids.add(item['id'])
-            if len(results) >= limit:
-                break
-        
-        # 模糊匹配中文名
-        for cn_name, en_name in INGREDIENT_TRANSLATIONS_REVERSE.items():
-            if query_lower in cn_name.lower() and len(results) < limit:
-                for item in self.parsed_data:
-                    if item['name'].lower() == en_name.lower() and item['id'] not in matched_ids:
-                        results.append(item)
-                        matched_ids.add(item['id'])
-        
-        return results[:limit]
-    
-    def get_ingredient_by_name(self, name):
-        """根据名称获取食材"""
-        name_lower = name.lower().strip()
-        if name_lower in self.name_index:
-            return self.name_index[name_lower]
-        if name_lower in INGREDIENT_TRANSLATIONS_REVERSE:
-            en_name = INGREDIENT_TRANSLATIONS_REVERSE[name_lower]
-            if en_name.lower() in self.name_index:
-                return self.name_index[en_name.lower()]
-        return None
-    
-    def translate_flavor(self, flavor):
-        """翻译风味（智能兜底）"""
-        flavor_lower = flavor.lower().strip()
-        if flavor_lower in FLAVOR_TRANSLATIONS:
-            return FLAVOR_TRANSLATIONS[flavor_lower]
-        # 智能兜底：去除下划线，首字母大写
-        return flavor.replace('_', ' ').title()
-    
-    def calculate_pairing_score(self, ing1, ing2):
-        """计算配对得分"""
-        set1 = ing1['molecule_set']
-        set2 = ing2['molecule_set']
-        common = set1 & set2
-        
-        if not common:
-            return 0, 0, []
-        
-        common_count = len(common)
-        total_count = len(set1) + len(set2)
-        
-        if total_count == 0:
-            return 0, 0, []
-        
-        score = (common_count * 2) / total_count * 100
-        return min(score, 100), common_count, list(common)
-    
-    def detect_risks(self, common_molecules):
-        """检测风险风味"""
-        risks = []
-        for mol in common_molecules:
-            mol_lower = mol.lower()
-            for risk_key, risk_data in RISK_KEYWORDS.items():
-                if risk_key in mol_lower:
-                    risks.append(risk_data)
-        return risks
-    
-    def analyze_pairing_type(self, ing1, ing2):
-        """分析配对类型：共鸣 vs 对比"""
-        dims1 = ing1['dimensions']
-        dims2 = ing2['dimensions']
-        
-        # 找出主导维度
-        dom1 = max(dims1, key=dims1.get) if any(dims1.values()) else None
-        dom2 = max(dims2, key=dims2.get) if any(dims2.values()) else None
-        
-        # 判断配对类型
-        if dom1 and dom2 and dom1 == dom2:
-            pairing_type = "consonance"
-            dim_name = FLAVOR_DIMENSIONS[dom1]['name']
-            explanation = f"**深度共鸣组合**：{ing1['cn_name']}与{ing2['cn_name']}都以**{dim_name}**为主导风味，能创造出极具统一性的味觉体验。"
-            suggestion = "💡 **烹饪建议**：可加入少量酸味剂（如柠檬、醋）来防止风味过于沉闷，或加入少量对比元素增加层次。"
-        else:
-            pairing_type = "contrast"
-            dim1_name = FLAVOR_DIMENSIONS[dom1]['name'] if dom1 else "未知"
-            dim2_name = FLAVOR_DIMENSIONS[dom2]['name'] if dom2 else "未知"
-            explanation = f"**跨界对比组合**：{ing1['cn_name']}的**{dim1_name}**与{ing2['cn_name']}的**{dim2_name}**形成对冲，能创造惊喜和平衡。"
-            suggestion = "💡 **烹饪建议**：加入油脂（如橄榄油、黄油）作为媒介来融合这种对冲，让两种风味更好地交织。"
-        
-        return pairing_type, explanation, suggestion
-    
-    def generate_chef_insight(self, score, common_molecules, ing1, ing2):
-        """生成厨师延展思考"""
-        insights = []
-        
-        # 基于分数的建议
-        if score >= 70:
-            insights.append("✨ **高契合度**：这组配对风味高度统一，适合作为主菜的核心搭配。")
-        elif score >= 50:
-            insights.append("👍 **良好契合度**：这组配对有一定共鸣，适合作为配菜或调味组合。")
-        elif score >= 30:
-            insights.append("🤔 **中等契合度**：这组配对风味关联较弱，可能需要额外调味来连接。")
-        else:
-            insights.append("🎲 **低契合度**：这组配对风味差异较大，属于冒险尝试，建议小量测试。")
-        
-        # 基于分子活性的温度建议
-        volatile_count = sum(1 for m in common_molecules if any(k in m.lower() for k in ['fresh', 'citrus', 'mint', 'green', 'floral']))
-        heavy_count = sum(1 for m in common_molecules if any(k in m.lower() for k in ['roasted', 'caramel', 'mushroom', 'earthy', 'meaty']))
-        
-        if volatile_count > heavy_count:
-            insights.append("🌡️ **温度建议**：含有较多高挥发组分，建议**低温烹饪**或**最后加入**，保留其灵动的香气。")
-        elif heavy_count > volatile_count:
-            insights.append("🌡️ **温度建议**：含有较多重分子组分，建议**炖煮**或**发酵**，释放其深层的底蕴。")
-        
-        # 比例建议
-        ratio = ing1['molecule_count'] / max(ing2['molecule_count'], 1)
-        if ratio > 3:
-            insights.append(f"⚖️ **比例建议**：{ing1['cn_name']}的风味强度约为{ing2['cn_name']}的{ratio:.1f}倍，建议用量比例为 1:{ratio:.0f}。")
-        elif ratio < 0.33:
-            insights.append(f"⚖️ **比例建议**：{ing2['cn_name']}的风味强度约为{ing1['cn_name']}的{1/ratio:.1f}倍，建议用量比例为 {1/ratio:.0f}:1。")
-        
-        return "\n\n".join(insights)
-    
-    def create_radar_chart(self, ing1, ing2):
-        """创建风味雷达图"""
-        categories = [FLAVOR_DIMENSIONS[k]['name'] for k in FLAVOR_DIMENSIONS.keys()]
-        
-        fig = go.Figure()
-        
-        # 食材1
-        values1 = list(ing1['dimensions'].values())
-        # 确保闭合
-        values1_closed = values1 + [values1[0]]
-        categories_closed = categories + [categories[0]]
-        
-        fig.add_trace(go.Scatterpolar(
-            r=values1_closed,
-            theta=categories_closed,
-            fill='toself',
-            name=ing1['cn_name'],
-            line_color='#4CAF50',
-            fillcolor='rgba(76, 175, 80, 0.3)'
-        ))
-        
-        # 食材2
-        values2 = list(ing2['dimensions'].values())
-        values2_closed = values2 + [values2[0]]
-        
-        fig.add_trace(go.Scatterpolar(
-            r=values2_closed,
-            theta=categories_closed,
-            fill='toself',
-            name=ing2['cn_name'],
-            line_color='#FF9800',
-            fillcolor='rgba(255, 152, 0, 0.3)'
-        ))
-        
-        max_val = max(max(values1), max(values2)) if values1 and values2 else 10
-        
-        fig.update_layout(
-            polar=dict(
-                radialaxis=dict(visible=True, range=[0, max(max_val * 1.2, 10)])
-            ),
-            showlegend=True,
-            height=400,
-            margin=dict(l=80, r=80, t=40, b=40),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
-        )
-        
-        return fig
-    
-    def pair_two_ingredients(self, name1, name2):
-        """配对两个食材"""
-        ing1 = self.get_ingredient_by_name(name1)
-        ing2 = self.get_ingredient_by_name(name2)
-        
-        if not ing1 or not ing2:
-            return None
-        
-        score, common_count, common_molecules = self.calculate_pairing_score(ing1, ing2)
-        risks = self.detect_risks(common_molecules)
-        pairing_type, explanation, suggestion = self.analyze_pairing_type(ing1, ing2)
-        chef_insight = self.generate_chef_insight(score, common_molecules, ing1, ing2)
-        
-        return {
-            'ingredient1': ing1,
-            'ingredient2': ing2,
-            'score': score,
-            'common_count': common_count,
-            'common_molecules': common_molecules,
-            'risks': risks,
-            'pairing_type': pairing_type,
-            'explanation': explanation,
-            'suggestion': suggestion,
-            'chef_insight': chef_insight
-        }
-
-# ============== 初始化 ==============
-@st.cache_resource
-def get_lab(vegan_mode=True):
-    return MolecularFlavorLab('flavordb_data.csv', vegan_mode=vegan_mode)
-
-# ============== 侧边栏 ==============
-with st.sidebar:
-    st.markdown("## 🧪 分子风味配对实验室")
-    st.markdown("---")
-    
-    # Vegan 模式开关（默认开启）
-    vegan_mode = st.toggle("🌱 Vegan 纯素模式（含五辛过滤）", value=True)
-    
-    if vegan_mode:
-        st.markdown("<span class='vegan-badge'>✓ 已过滤肉类、蛋奶、五辛</span>", unsafe_allow_html=True)
-        st.caption("五辛：葱、蒜、韭菜、洋葱、兴渠")
-    
-    st.markdown("---")
-    
-    # 初始化数据
-    try:
-        lab = get_lab(vegan_mode=vegan_mode)
-        data_loaded = True
-        st.markdown(f"**📊 数据概览**")
-        st.markdown(f"- 可用食材: `{len(lab.parsed_data)}` 种")
-    except Exception as e:
-        st.error(f"数据加载失败: {e}")
-        data_loaded = False
-
-# ============== 主页面 ==============
-st.markdown('<h1 class="main-title">🧪 分子风味配对实验室</h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle">终极重构版 | 强力数据清洗 | 雷达图谱 | 风险预警</p>', unsafe_allow_html=True)
-
-if not data_loaded:
-    st.stop()
-
-# ============== 双食材配对 ==============
-st.markdown("### 🔍 选择两种食材进行科学配对分析")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    search1 = st.text_input("食材 A", placeholder="如：西红柿、罗勒、竹笋", key="search1")
-
-with col2:
-    search2 = st.text_input("食材 B", placeholder="如：土豆、迷迭香、柠檬", key="search2")
-
-ing1, ing2 = None, None
-
-if search1:
-    results1 = lab.search_ingredients(search1, limit=5)
-    if results1:
-        options1 = [f"{r['cn_name']} ({r['name']})" for r in results1]
-        selected1 = st.selectbox("选择食材 A:", options1, key="sel1")
-        name1 = selected1.split("(")[1].rstrip(")")
-        ing1 = lab.get_ingredient_by_name(name1)
-
-if search2:
-    results2 = lab.search_ingredients(search2, limit=5)
-    if results2:
-        options2 = [f"{r['cn_name']} ({r['name']})" for r in results2]
-        selected2 = st.selectbox("选择食材 B:", options2, key="sel2")
-        name2 = selected2.split("(")[1].rstrip(")")
-        ing2 = lab.get_ingredient_by_name(name2)
-
-# ============== 结果显示 ==============
-if ing1 and ing2:
-    st.markdown("---")
-    result = lab.pair_two_ingredients(ing1['name'], ing2['name'])
-    
-    if result:
-        score = result['score']
-        
-        # 分数徽章颜色
-        if score >= 70:
-            badge_class = "score-badge-high"
-            star_rating = "⭐⭐⭐⭐⭐"
-            level_text = "绝佳"
-        elif score >= 50:
-            badge_class = "score-badge-medium"
-            star_rating = "⭐⭐⭐⭐"
-            level_text = "优秀"
-        elif score >= 30:
-            badge_class = "score-badge-medium"
-            star_rating = "⭐⭐⭐"
-            level_text = "良好"
-        else:
-            badge_class = "score-badge-low"
-            star_rating = "⭐⭐"
-            level_text = "一般"
-        
-        # 分数与雷达图
-        score_col, radar_col = st.columns([1, 2])
-        
-        with score_col:
-            st.markdown(f'<div class="score-badge {badge_class}">{score:.1f}/100</div>', unsafe_allow_html=True)
-            st.progress(min(score / 100, 1.0))
-            st.markdown(f"**{star_rating} {level_text}**")
-            st.markdown(f"**共有分子: {result['common_count']} 个**")
-        
-        with radar_col:
-            try:
-                radar_chart = lab.create_radar_chart(ing1, ing2)
-                st.plotly_chart(radar_chart, use_container_width=True, key="radar")
-            except Exception as e:
-                st.error(f"雷达图生成失败: {e}")
-        
-        # 风险预警
-        if result['risks']:
-            st.markdown("### ⚠️ 风险预警")
-            for risk in result['risks']:
-                if risk['level'] == 'danger':
-                    st.markdown(f"<div class='risk-danger'>{risk['message']}</div>", unsafe_allow_html=True)
+                # 雷达图
+                st.plotly_chart(draw_radar(row['mol_set']), use_container_width=True, config={'displayModeBar':False})
+                
+                if i > 0:
+                    # AI 分析报告
+                    report_html = ai.generate_report(
+                        base_row['name'], row['name'], score, common, base_row['mol_set'], row['mol_set']
+                    )
+                    st.markdown(report_html, unsafe_allow_html=True)
+                    
+                    # 共有分子标签
+                    if len(common) > 0:
+                        st.markdown(f"<div style='margin-top:10px; font-size:0.8rem; color:#86868b'>🔬 共有分子:</div>", unsafe_allow_html=True)
+                        pills = "".join([f'<span class="pill pill-common">{ai.t(m, "flavor")}</span>' for m in list(common)[:8]])
+                        st.markdown(pills, unsafe_allow_html=True)
                 else:
-                    st.markdown(f"<div class='risk-warning'>{risk['message']}</div>", unsafe_allow_html=True)
-        
-        # 味型逻辑解读（折叠卡片）
-        with st.expander("🧠 味型逻辑解读", expanded=True):
-            if result['pairing_type'] == 'consonance':
-                st.markdown(f"<div class='insight-card insight-consonance'>{result['explanation']}<br><br>{result['suggestion']}</div>", unsafe_allow_html=True)
-            else:
-                st.markdown(f"<div class='insight-card insight-contrast'>{result['explanation']}<br><br>{result['suggestion']}</div>", unsafe_allow_html=True)
-        
-        # 厨师延展思考（折叠卡片）
-        with st.expander("👨‍🍳 厨师延展思考"):
-            st.markdown(f"<div class='insight-card'>{result['chef_insight']}</div>", unsafe_allow_html=True)
-        
-        # 共有风味标签云（按维度分类）
-        if result['common_molecules']:
-            with st.expander("🏷️ 共有风味分子（按维度分类）"):
-                # 按维度分类
-                dim_molecules = {key: [] for key in FLAVOR_DIMENSIONS.keys()}
-                for mol in result['common_molecules']:
-                    mol_lower = mol.lower()
-                    for dim_key, dim_data in FLAVOR_DIMENSIONS.items():
-                        if any(kw in mol_lower for kw in dim_data['keywords']):
-                            dim_molecules[dim_key].append(mol)
-                            break
+                    st.markdown("<div style='text-align:center; padding:30px; color:#86868b; font-size:0.9rem;'>📡 信号发射源<br>(对比基准)</div>", unsafe_allow_html=True)
                 
-                for dim_key, mols in dim_molecules.items():
-                    if mols:
-                        dim_data = FLAVOR_DIMENSIONS[dim_key]
-                        st.markdown(f"**{dim_data['name']}**")
-                        mol_html = ""
-                        for mol in mols[:15]:
-                            cn_name = lab.translate_flavor(mol)
-                            mol_html += f'<span class="flavor-tag flavor-tag-common {dim_data["css_class"]}">{cn_name}</span>'
-                        st.markdown(mol_html, unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.info("👈 请在左侧侧边栏选择 2 至 4 种食材，启动味觉虫洞引擎。")
 
-# ============== 页脚 ==============
-st.markdown("---")
-st.markdown("🧪 分子风味配对实验室 V6.0 | 终极重构版 | 强力数据清洗 | 雷达图谱 | 风险预警")
+else:
+    st.error("⚠️ 未检测到数据库文件。请确保 'flavordb_data.csv' 已上传至仓库根目录。")

@@ -1,186 +1,138 @@
 # 🚀 快速开始指南
 
-## 方式一：本地运行（推荐）
+## 安装和运行
 
-### 步骤 1：准备环境
-
-确保已安装 Python 3.9+：
-
+### 1. 解压文件
 ```bash
-python --version
+tar -xzf flavor_app_professional.tar.gz
+cd flavor_app_upgraded
 ```
 
-### 步骤 2：创建项目文件夹
-
+### 2. 安装依赖
 ```bash
-mkdir molecular-flavor-lab
-cd molecular-flavor-lab
-```
-
-### 步骤 3：下载项目文件
-
-从 `/mnt/okcomputer/output/molecular_flavor_lab/` 下载以下文件：
-
-- `app.py` - 主应用
-- `flavordb_data.csv` - 数据集
-- `requirements.txt` - 依赖列表
-
-### 步骤 4：安装依赖
-
-```bash
-# 创建虚拟环境（推荐）
-python -m venv venv
-
-# Windows 激活
-venv\Scripts\activate
-
-# Mac/Linux 激活
-source venv/bin/activate
-
-# 安装依赖
 pip install -r requirements.txt
 ```
 
-### 步骤 5：运行应用
-
+### 3. 运行应用
 ```bash
-streamlit run app.py
+streamlit run app_pro.py
 ```
 
-浏览器会自动打开 `http://localhost:8501`
+应用将在浏览器中自动打开,通常在 `http://localhost:8501`
 
 ---
 
-## 方式二：Docker 运行
+## 文件说明
 
-### 创建 Dockerfile
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-
-EXPOSE 8501
-
-CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0"]
 ```
-
-### 构建并运行
-
-```bash
-docker build -t molecular-flavor-lab .
-docker run -p 8501:8501 molecular-flavor-lab
+flavor_app_upgraded/
+├── app_pro.py                    # 主应用 (运行这个)
+├── flavor_translator_pro.py      # 专业翻译引擎 (500+词条)
+├── recipe_consultant.py          # 配方设计顾问 (智能分析)
+├── flavordb_data.csv            # 数据文件 (必需)
+├── requirements.txt             # Python依赖包
+├── README.md                    # 详细说明文档
+└── EXAMPLES.md                  # 实际效果对比示例
 ```
 
 ---
 
-## 方式三：Streamlit Cloud 部署（免费）
+## 核心功能
 
-### 步骤 1：推送到 Github
+### 1️⃣ 专业翻译 (覆盖率提升到95%+)
+- 500+ 风味词典
+- 13大风味家族自动分类
+- 化学命名规则支持
 
-```bash
-# 初始化仓库
-git init
+### 2️⃣ 智能配对分析
+- 质量评分 (0-100)
+- 配对类型识别 (和谐/对比/平衡)
+- 协同效应检测
+- 风险智能识别
 
-# 添加文件
-git add .
-git commit -m "Initial commit"
+### 3️⃣ 专业创作指引
+- 配比建议
+- 处理技巧
+- 应用场景
+- 增强提示
 
-# 在 Github 创建新仓库，然后关联
-git remote add origin https://github.com/YOUR_USERNAME/molecular-flavor-lab.git
-git branch -M main
-git push -u origin main
-```
+---
 
-### 步骤 2：部署到 Streamlit Cloud
+## 典型使用流程
 
-1. 访问 https://streamlit.io/cloud
-2. 用 Github 账号登录
-3. 点击 "New App"
-4. 选择你的仓库
-5. 主文件路径填 `app.py`
-6. 点击 Deploy
+### 场景1: 双食材配对分析
+1. 打开应用
+2. 在侧边栏选择2种食材 (如:苹果、肉桂)
+3. 查看:
+   - 各自的风味家族分布
+   - 配对质量分数
+   - 协同效应
+   - 创作建议
+4. 根据建议设计配方!
 
-**免费额度：** 1GB 存储 + 1GB 内存
+### 场景2: 多食材创意配方
+1. 选择3种食材 (如:番茄、罗勒、橄榄油)
+2. 查看整体风味轮廓
+3. 查看成对评分矩阵
+4. 获取创意方向建议
+5. 开始创作!
+
+---
+
+## 对比原版的提升
+
+| 功能 | 原版 | 专业版 |
+|-----|------|-------|
+| 翻译覆盖 | 25% | 95%+ |
+| 风味分析 | ❌ | ✅ 13大家族 |
+| 配对指导 | 仅分数 | 完整指南 |
+| 协同检测 | ❌ | ✅ 智能检测 |
+| 配比建议 | ❌ | ✅ 详细比例 |
+| 应用场景 | ❌ | ✅ 多场景推荐 |
 
 ---
 
 ## 常见问题
 
-### Q1: 提示 "ModuleNotFoundError"
+### Q1: 为什么有些食材没有显示?
+A: 如果开启了Vegan模式,会自动过滤肉类、蛋奶和五辛。可以关闭Vegan模式查看所有食材。
 
-**解决：** 确保在虚拟环境中安装依赖
+### Q2: 配对分数是怎么算的?
+A: 综合考虑:
+- 共同风味家族 (基础分)
+- 协同效应 (加分)
+- 潜在风险 (扣分)
+- 复杂度平衡 (加分)
 
-```bash
-# 重新激活环境
-source venv/bin/activate  # Mac/Linux
-venv\Scripts\activate     # Windows
+### Q3: 翻译还是有英文怎么办?
+A: 500+词条已覆盖绝大部分常用风味。如遇到未收录的专业术语,会保持原文。你可以在 `flavor_translator_pro.py` 中的 `flavor_map` 添加新词条。
 
-# 重新安装
-pip install -r requirements.txt
+### Q4: 如何添加新的风味词条?
+A: 编辑 `flavor_translator_pro.py`,在 `self.flavor_map` 字典中添加:
+```python
+"新英文词": "新中文翻译",
 ```
 
-### Q2: 端口被占用
-
-**解决：** 指定其他端口
-
-```bash
-streamlit run app.py --server.port 8502
-```
-
-### Q3: 数据文件找不到
-
-**解决：** 确保 `flavordb_data.csv` 和 `app.py` 在同一目录
-
-```bash
-ls -la
-# 应该看到 app.py 和 flavordb_data.csv
-```
-
-### Q4: 如何更新数据
-
-**解决：** 替换 `flavordb_data.csv` 文件，保持相同格式
+### Q5: 可以分析更多食材吗?
+A: 目前支持2-3种食材的深度分析。如需分析更多,建议分批进行。
 
 ---
 
-## 项目结构
+## 技术支持
 
-```
-molecular-flavor-lab/
-├── app.py              # 主应用（必须）
-├── flavordb_data.csv   # 数据集（必须）
-├── requirements.txt    # 依赖（必须）
-├── README.md          # 说明文档
-├── SCORING_SYSTEM.md  # 评分系统说明
-└── venv/              # 虚拟环境（自动生成）
-```
+遇到问题?
+1. 查看 README.md 了解详细说明
+2. 查看 EXAMPLES.md 学习使用示例
+3. 检查是否正确安装了所有依赖
 
 ---
 
 ## 下一步
 
-1. ✅ 本地运行成功
-2. 🎨 自定义 UI 样式（修改 app.py 中的 CSS）
-3. 🔧 调整评分参数（修改算法权重）
-4. 📊 添加更多数据（扩展 CSV 文件）
-5. 🚀 部署上线（Streamlit Cloud / 自有服务器）
+- 📖 阅读 `README.md` 了解完整功能
+- 🎯 查看 `EXAMPLES.md` 学习实际案例
+- 🧪 开始创作你的风味配方!
 
 ---
 
-## 需要帮助？
-
-- 📖 查看 `README.md` 了解项目详情
-- 📊 查看 `SCORING_SYSTEM.md` 了解评分算法
-- 🐛 提交 Issue 到 Github
-
----
-
-<p align="center">
-🧪 分子风味配对实验室 | Molecular Flavor Lab<br>
-<sub>让科学指导烹饪</sub>
-</p>
+**祝你创作顺利!** 🎨🍽️✨
